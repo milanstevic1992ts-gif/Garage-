@@ -10,6 +10,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      GARAGE_KEYSTORE_B64: ${{ secrets.GARAGE_KEYSTORE_B64 }}
+      GARAGE_KEYSTORE_PASSWORD: ${{ secrets.GARAGE_KEYSTORE_PASSWORD }}
+      GARAGE_KEY_ALIAS: ${{ secrets.GARAGE_KEY_ALIAS }}
+      GARAGE_KEY_PASSWORD: ${{ secrets.GARAGE_KEY_PASSWORD }}
+
     steps:
       - uses: actions/checkout@v4
 
@@ -40,17 +46,36 @@ jobs:
           npx cap sync android
           bash scripts/patch-android.sh
 
-      - name: Build debug APK
+      - name: Build unsigned release APK
         run: |
           chmod +x android/gradlew
           cd android
-          ./gradlew assembleDebug --no-daemon
+          ./gradlew assembleRelease --no-daemon
 
-      - name: Collect APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk garage.apk
+      - name: Sign with permanent Garage key
+        if: env.GARAGE_KEYSTORE_B64 != ''
+        run: |
+          echo "$GARAGE_KEYSTORE_B64" | base64 --decode > garage-release.jks
+
+          ZIPALIGN="$ANDROID_HOME/build-tools/35.0.0/zipalign"
+          APKSIGNER="$ANDROID_HOME/build-tools/35.0.0/apksigner"
+          INPUT="android/app/build/outputs/apk/release/app-release-unsigned.apk"
+
+          "$ZIPALIGN" -f -P 16 -v 4 "$INPUT" garage-aligned.apk
+
+          "$APKSIGNER" sign             --ks garage-release.jks             --ks-key-alias "$GARAGE_KEY_ALIAS"             --ks-pass "pass:$GARAGE_KEYSTORE_PASSWORD"             --key-pass "pass:$GARAGE_KEY_PASSWORD"             --out garage.apk             garage-aligned.apk
+
+          "$APKSIGNER" verify --verbose --print-certs garage.apk
+
+      - name: Signing key not configured
+        if: env.GARAGE_KEYSTORE_B64 == ''
+        run: |
+          echo "Firma permanente non configurata nei GitHub Actions Secrets."
+          echo "Per sicurezza nessun APK installabile viene pubblicato con una chiave temporanea."
 
       - uses: actions/upload-artifact@v4
+        if: env.GARAGE_KEYSTORE_B64 != ''
         with:
-          name: garage-apk
+          name: garage-apk-signed
           path: garage.apk
           retention-days: 30
