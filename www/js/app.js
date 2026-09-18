@@ -33,6 +33,7 @@ const state = {
   placementMode: 'relocate',
   activeVoicePanel: null,
   verificationPlate: '',
+  pendingVerification: null,
 };
 
 const STATUS = {
@@ -111,12 +112,16 @@ function openVerificationDialog(vehicle = null, plateOverride = '') {
   $('#verificationPlate').textContent = plate || '—';
 
   form.elements.vehicleId.value = vehicle?.id || '';
-  form.elements.verifiedBrand.value = vehicle?.verifiedBrand || vehicle?.brand || '';
-  form.elements.verifiedModel.value = vehicle?.verifiedModel || vehicle?.model || '';
-  form.elements.verifiedMileageKm.value = vehicle?.verifiedMileageKm || '';
-  form.elements.verifiedRevisionDate.value = vehicle?.verifiedRevisionDate || '';
-  form.elements.verificationSource.value = vehicle?.verificationSource || 'portale';
-  form.elements.verificationNotes.value = vehicle?.verificationNotes || '';
+  const pending = !vehicle && state.pendingVerification?.plate === plate
+    ? state.pendingVerification
+    : null;
+
+  form.elements.verifiedBrand.value = vehicle?.verifiedBrand || pending?.verifiedBrand || vehicle?.brand || '';
+  form.elements.verifiedModel.value = vehicle?.verifiedModel || pending?.verifiedModel || vehicle?.model || '';
+  form.elements.verifiedMileageKm.value = vehicle?.verifiedMileageKm || pending?.verifiedMileageKm || '';
+  form.elements.verifiedRevisionDate.value = vehicle?.verifiedRevisionDate || pending?.verifiedRevisionDate || '';
+  form.elements.verificationSource.value = vehicle?.verificationSource || pending?.verificationSource || 'portale';
+  form.elements.verificationNotes.value = vehicle?.verificationNotes || pending?.verificationNotes || '';
 
   $('#verificationDialog').showModal();
 }
@@ -142,7 +147,29 @@ async function saveVerification(event) {
   }
 
   if (!vehicle) {
-    $('#verificationFormError').textContent = 'Salva prima la scheda del veicolo, poi registra la verifica.';
+    state.pendingVerification = {
+      plate: state.verificationPlate,
+      verifiedMileageKm,
+      verifiedRevisionDate: data.verifiedRevisionDate || '',
+      verificationSource: data.verificationSource || 'portale',
+      verificationNotes: data.verificationNotes.trim(),
+      verifiedBrand: data.verifiedBrand.trim(),
+      verifiedModel: data.verifiedModel.trim(),
+      verifiedAt: nowIso(),
+    };
+
+    const vehicleForm = $('#vehicleForm');
+    if (vehicleForm?.open !== false) {
+      if (state.pendingVerification.verifiedBrand) {
+        vehicleForm.elements.brand.value = state.pendingVerification.verifiedBrand;
+      }
+      if (state.pendingVerification.verifiedModel) {
+        vehicleForm.elements.model.value = state.pendingVerification.verifiedModel;
+      }
+    }
+
+    $('#verificationDialog').close();
+    toast('Dati verificati pronti per il nuovo ingresso');
     return;
   }
 
@@ -386,18 +413,49 @@ async function saveVehicle(event) {
     declaredProblems: data.declaredProblems.trim(),
     foundProblems: data.foundProblems.trim(),
     status: data.status,
-    verifiedMileageKm: previous?.verifiedMileageKm || '',
-    verifiedRevisionDate: previous?.verifiedRevisionDate || '',
-    verificationSource: previous?.verificationSource || '',
-    verificationNotes: previous?.verificationNotes || '',
-    verifiedBrand: previous?.verifiedBrand || '',
-    verifiedModel: previous?.verifiedModel || '',
-    verifiedAt: previous?.verifiedAt || '',
+    verifiedMileageKm: previous?.verifiedMileageKm || (
+      state.pendingVerification?.plate === normalizedPlate
+        ? state.pendingVerification.verifiedMileageKm
+        : ''
+    ),
+    verifiedRevisionDate: previous?.verifiedRevisionDate || (
+      state.pendingVerification?.plate === normalizedPlate
+        ? state.pendingVerification.verifiedRevisionDate
+        : ''
+    ),
+    verificationSource: previous?.verificationSource || (
+      state.pendingVerification?.plate === normalizedPlate
+        ? state.pendingVerification.verificationSource
+        : ''
+    ),
+    verificationNotes: previous?.verificationNotes || (
+      state.pendingVerification?.plate === normalizedPlate
+        ? state.pendingVerification.verificationNotes
+        : ''
+    ),
+    verifiedBrand: previous?.verifiedBrand || (
+      state.pendingVerification?.plate === normalizedPlate
+        ? state.pendingVerification.verifiedBrand
+        : ''
+    ),
+    verifiedModel: previous?.verifiedModel || (
+      state.pendingVerification?.plate === normalizedPlate
+        ? state.pendingVerification.verifiedModel
+        : ''
+    ),
+    verifiedAt: previous?.verifiedAt || (
+      state.pendingVerification?.plate === normalizedPlate
+        ? state.pendingVerification.verifiedAt
+        : ''
+    ),
     createdAt: previous?.createdAt || nowIso(),
     updatedAt: nowIso(),
   };
 
   await vehicles.save(record);
+  if (state.pendingVerification?.plate === normalizedPlate) {
+    state.pendingVerification = null;
+  }
   await refreshVehicles();
   renderVehicleList();
   backup.scheduleVehicle(record.id);
