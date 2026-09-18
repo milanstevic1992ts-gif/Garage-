@@ -89,7 +89,9 @@ function vehicleCard(vehicle) {
 
 function renderVehicleList() {
   const q = $('#vehicleSearch').value.trim();
-  const list = smartVehicleSearch(state.vehicles, q);
+  const allMatches = smartVehicleSearch(state.vehicles, q);
+  const showAll = $('#showAllVehicles')?.dataset?.all === '1';
+  const list = q || showAll ? allMatches : allMatches.slice(0, 3);
 
   $('#vehicleResults').innerHTML = list.length
     ? list.map(vehicleCard).join('')
@@ -756,6 +758,12 @@ function wireVoicePanels() {
 function wireUi() {
   wireVoicePanels();
   $('#newVehicleButton').onclick = () => openVehicleForm();
+  $('#showAllVehicles').onclick = () => {
+    const el = $('#showAllVehicles');
+    el.dataset.all = el.dataset.all === '1' ? '0' : '1';
+    el.textContent = el.dataset.all === '1' ? 'Mostra ultimi' : 'Vedi tutti ›';
+    renderVehicleList();
+  };
   $('#vehicleForm').addEventListener('submit', saveVehicle);
   $('#jobForm').addEventListener('submit', saveJob);
   $('#inventoryForm').addEventListener('submit', saveInventory);
