@@ -550,15 +550,24 @@ async function saveInventory(event) {
     drawer: data.drawer.trim(),
     condition: data.condition,
     notes: data.notes.trim(),
+    status: Math.max(0, Number(data.quantity || 0)) > 0 ? 'available' : 'taken',
+    takenAt: null,
     createdAt: nowIso(),
     updatedAt: nowIso(),
   };
 
   await inventory.save(record);
+  await recordStockMovement(record, 'intake', Number(record.quantity || 0));
   backup.syncInventory().catch(() => {});
   $('#inventoryDialog').close();
   toast('Ricambio salvato');
-  renderInventory();
+
+  await refreshInventory();
+  if (Number(record.quantity || 0) > 0 && !record.shelf) {
+    openPlacement(record, 'relocate');
+  } else {
+    renderInventory();
+  }
 }
 
 async function renderBackup() {
@@ -600,6 +609,7 @@ function wireUi() {
   $('#vehicleForm').addEventListener('submit', saveVehicle);
   $('#jobForm').addEventListener('submit', saveJob);
   $('#inventoryForm').addEventListener('submit', saveInventory);
+  $('#placementForm').addEventListener('submit', savePlacement);
 
   $('#vehicleSearch').addEventListener('input', renderVehicleList);
   $('#clearVehicleSearch').onclick = () => {
@@ -620,8 +630,28 @@ function wireUi() {
     $('#inventoryForm').elements.quantity.value = 1;
     $('#inventoryForm').elements.condition.value = 'buono';
     $('#inventoryFormError').textContent = '';
+    $('#newItemLocationSuggestions').innerHTML = '';
     $('#inventoryDialog').showModal();
   };
+
+  $('#showWithdrawn').addEventListener('change', renderInventory);
+  $('#suggestShelfNewButton').onclick = () => {
+    renderLocationSuggestions(
+      $('#newItemLocationSuggestions'),
+      draftFromInventoryForm(),
+      location => applyLocation($('#inventoryForm'), location),
+    );
+  };
+  $('#scanShelfNewButton').onclick = () => scanIntoForm($('#inventoryForm'));
+  $('#suggestShelfPlacementButton').onclick = async () => {
+    const item = await inventory.get($('#placementForm').elements.itemId.value);
+    if (item) renderLocationSuggestions(
+      $('#placementSuggestions'),
+      item,
+      location => applyLocation($('#placementForm'), location),
+    );
+  };
+  $('#scanShelfPlacementButton').onclick = () => scanIntoForm($('#placementForm'));
 
   $('#choosePhotosButton').onclick = () => $('#photoInput').click();
   $('#photoInput').addEventListener('change', e => saveSelectedPhotos([...e.target.files]));
@@ -635,8 +665,21 @@ function wireUi() {
     button.onclick = () => showView(button.dataset.view);
   });
 
-  $$('[data-close]').forEach(button => {
+  $('[data-close]').forEach(button => {
     button.onclick = () => $('#' + button.dataset.close).close();
+  });
+
+  $('[data-order-target]').forEach(button => {
+    button.onclick = () => {
+      const form = button.closest('form');
+      const field = form?.elements?.[button.dataset.orderTarget];
+      if (!field || !field.value.trim()) {
+        toast('Scrivi prima qualche appunto.');
+        return;
+      }
+      field.value = orderRoughNotes(field.value);
+      toast('Appunti riordinati');
+    };
   });
 
   $('#vehicleForm').elements.plate.addEventListener('input', e => {
