@@ -29,6 +29,8 @@ const state = {
   photoVehicleId: null,
   placementMode: 'relocate',
   activeVoicePanel: null,
+  pendingInventoryPhoto: null,
+  pendingInventoryPhotoUrl: '',
 };
 
 const STATUS = {
@@ -429,7 +431,7 @@ function renderInventory() {
       return `
       <article class="inventory-card premium-inventory-card ${withdrawn ? 'withdrawn' : ''}">
         <div class="inventory-product">
-          <img class="part-thumb" src="assets/part-carb.svg" alt="">
+          <img class="part-thumb" data-inventory-photo="${item.photoBlob ? '1' : '0'}" data-item-id="${item.id}" src="${item.photoBlob ? URL.createObjectURL(item.photoBlob) : 'assets/part-carb.svg'}" alt="${esc(item.name)}">
           <div class="inventory-product-copy">
             <h3>${esc(item.name)}</h3>
             <p class="muted">${esc([item.category,item.brand,item.partNumber].filter(Boolean).join(' · '))}</p>
@@ -451,7 +453,17 @@ function renderInventory() {
       </article>`;
     }).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
 
-    $$('[data-withdraw-id]').forEach(button => {
+    $('.part-thumb[data-inventory-photo="1"]').forEach(img => {
+      img.onclick = () => {
+        const dialog = $('#photoViewerDialog');
+        const viewer = $('#photoViewerImage');
+        viewer.src = img.src;
+        viewer.alt = img.alt || 'Foto ricambio';
+        dialog.showModal();
+      };
+    });
+
+    $('[data-withdraw-id]').forEach(button => {
       button.onclick = () => withdrawInventoryItem(button.dataset.withdrawId);
     });
     $('[data-putaway-id]').forEach(button => {
@@ -616,6 +628,7 @@ async function saveInventory(event) {
     drawer: data.drawer.trim(),
     condition: data.condition,
     notes: data.notes.trim(),
+    photoBlob: state.pendingInventoryPhoto || null,
     status: Math.max(0, Number(data.quantity || 0)) > 0 ? 'available' : 'taken',
     takenAt: null,
     createdAt: nowIso(),
@@ -623,6 +636,11 @@ async function saveInventory(event) {
   };
 
   await inventory.save(record);
+  state.pendingInventoryPhoto = null;
+  if (state.pendingInventoryPhotoUrl) {
+    URL.revokeObjectURL(state.pendingInventoryPhotoUrl);
+    state.pendingInventoryPhotoUrl = '';
+  }
   await recordStockMovement(record, 'intake', Number(record.quantity || 0));
   backup.syncInventory().catch(() => {});
   $('#inventoryDialog').close();
@@ -872,6 +890,14 @@ function wireUi() {
     $('#inventoryForm').elements.condition.value = 'buono';
     $('#inventoryFormError').textContent = '';
     $('#newItemLocationSuggestions').innerHTML = '';
+    state.pendingInventoryPhoto = null;
+    if (state.pendingInventoryPhotoUrl) URL.revokeObjectURL(state.pendingInventoryPhotoUrl);
+    state.pendingInventoryPhotoUrl = '';
+    $('#inventoryPhotoInput').value = '';
+    const preview = $('#inventoryPhotoPreview');
+    preview.classList.add('empty');
+    preview.innerHTML = '<span>📷</span><small>Nessuna foto</small>';
+    $('#inventoryPhotoRemove').classList.add('hidden');
     $('#inventoryDialog').showModal();
   };
 
@@ -883,6 +909,38 @@ function wireUi() {
       location => applyLocation($('#inventoryForm'), location),
     );
   };
+  $('#inventoryPhotoButton').onclick = () => $('#inventoryPhotoInput').click();
+  $('#inventoryPhotoInput').addEventListener('change', async event => {
+    const file = event.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+
+    const blob = await compressImage(file);
+    if (!blob) {
+      toast('Impossibile elaborare la foto');
+      return;
+    }
+
+    state.pendingInventoryPhoto = blob;
+    if (state.pendingInventoryPhotoUrl) URL.revokeObjectURL(state.pendingInventoryPhotoUrl);
+    state.pendingInventoryPhotoUrl = URL.createObjectURL(blob);
+
+    const preview = $('#inventoryPhotoPreview');
+    preview.classList.remove('empty');
+    preview.innerHTML = '<img src="' + state.pendingInventoryPhotoUrl + '" alt="Anteprima ricambio">';
+    $('#inventoryPhotoRemove').classList.remove('hidden');
+  });
+
+  $('#inventoryPhotoRemove').onclick = () => {
+    state.pendingInventoryPhoto = null;
+    if (state.pendingInventoryPhotoUrl) URL.revokeObjectURL(state.pendingInventoryPhotoUrl);
+    state.pendingInventoryPhotoUrl = '';
+    $('#inventoryPhotoInput').value = '';
+    const preview = $('#inventoryPhotoPreview');
+    preview.classList.add('empty');
+    preview.innerHTML = '<span>📷</span><small>Nessuna foto</small>';
+    $('#inventoryPhotoRemove').classList.add('hidden');
+  };
+
   $('#scanShelfNewButton').onclick = () => scanIntoForm($('#inventoryForm'));
   ['name','category','brand','compatibleWith'].forEach(fieldName => {
     $('#inventoryForm').elements[fieldName].addEventListener('input', () => {
