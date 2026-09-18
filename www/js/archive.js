@@ -11,7 +11,8 @@ export function customerName(vehicle) {
 }
 
 export function vehicleFolderName(vehicle) {
-  return clean(`${vehicle.plate || 'SENZA-TARGA'} - ${customerName(vehicle)}`);
+  const plateOrId = vehicle.plate || `SENZA-TARGA-${String(vehicle.id || '').slice(0,6) || 'NUOVO'}`;
+  return clean(`${plateOrId} - ${customerName(vehicle)}`);
 }
 
 export function vehicleLabel(vehicle) {
