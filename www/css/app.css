@@ -70,6 +70,15 @@ a{color:inherit}
   backdrop-filter:blur(12px);
   color:#fff;
 }
+.icon-btn svg{
+  width:21px;
+  height:21px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.9;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
 
 h1,h2,h3,p{margin-top:0}
 h1,h2,h3{letter-spacing:-.03em}
@@ -236,6 +245,7 @@ h1,h2,h3{letter-spacing:-.03em}
 .list-heading span{
   color:#c7b3a6;
   font-size:12px;
+  cursor:pointer;
 }
 .vehicle-stack{padding:0 14px 8px}
 
