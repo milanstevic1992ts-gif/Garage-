@@ -143,6 +143,7 @@ async function renderVehicleDetail() {
     .sort((a,b) => String(b.date).localeCompare(String(a.date)));
   const vehiclePhotos = (await photos.byVehicle(vehicle.id))
     .sort((a,b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+  const generalVehiclePhotos = vehiclePhotos.filter(photo => !photo.jobId);
   const tel = String(vehicle.phone || '').replace(/\s/g,'');
 
   $('#vehicleView').innerHTML = `
@@ -187,9 +188,9 @@ async function renderVehicleDetail() {
       { field:'foundProblems', label:'Riscontrati' },
     ])}
 
-    <div class="section-title"><strong>Fotografie</strong><span>${vehiclePhotos.length}</span></div>
+    <div class="section-title"><strong>Fotografie</strong><span>${generalVehiclePhotos.length}</span></div>
     <div class="gallery" id="vehicleGallery">
-      ${vehiclePhotos.length ? vehiclePhotos.map(photo => `
+      ${generalVehiclePhotos.length ? generalVehiclePhotos.map(photo => `
         <img data-photo-id="${photo.id}" alt="${esc(photo.phase || 'foto')}" src="${URL.createObjectURL(photo.blob)}">
       `).join('') : '<div class="info-card"><p>Nessuna foto ancora.</p></div>'}
     </div>
@@ -204,13 +205,16 @@ async function renderVehicleDetail() {
           </div>
           <p style="margin:9px 0 0">${esc(job.workDone)}</p>
           ${job.customerNotes ? `<p class="muted">${esc(job.customerNotes)}</p>` : ''}
-          ${job.photoBlobs?.length ? `
-            <div class="job-photo-strip">
-              ${job.photoBlobs.map((blob,index) => `
-                <img class="job-photo-thumb" data-job-photo="1" alt="Foto intervento ${index + 1}" src="${URL.createObjectURL(blob)}">
-              `).join('')}
-            </div>
-          ` : ''}
+          ${(() => {
+            const jobPhotos = vehiclePhotos.filter(photo => photo.jobId === job.id);
+            return jobPhotos.length ? `
+              <div class="job-photo-strip">
+                ${jobPhotos.map((photo,index) => `
+                  <img class="job-photo-thumb" data-job-photo="1" alt="Foto intervento ${index + 1}" src="${URL.createObjectURL(photo.blob)}">
+                `).join('')}
+              </div>
+            ` : '';
+          })()}
         </article>
       `).join('') : '<div class="info-card"><p>Nessun intervento registrato.</p></div>'}
     </div>
@@ -381,12 +385,27 @@ async function saveJob(event) {
     workDone: data.workDone.trim(),
     customerNotes: data.customerNotes.trim(),
     internalNotes: data.internalNotes.trim(),
-    photoBlobs: [...state.pendingJobPhotos],
     createdAt: nowIso(),
     updatedAt: nowIso(),
   };
 
   await jobs.save(record);
+
+  for (const blob of state.pendingJobPhotos) {
+    const photo = {
+      id: uuid(),
+      vehicleId: vehicle.id,
+      jobId: record.id,
+      phase: 'intervento',
+      createdAt: nowIso(),
+      blob,
+      backupLocal: false,
+      backupDrive: false,
+    };
+    await photos.save(photo);
+    backup.syncPhoto(photo).catch(() => {});
+  }
+
   state.pendingJobPhotos = [];
   state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
   state.pendingJobPhotoUrls = [];
