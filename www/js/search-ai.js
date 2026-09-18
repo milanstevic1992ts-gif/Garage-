@@ -120,12 +120,15 @@ function tokenSimilarity(query, candidate) {
   candidate = normalize(candidate);
   if (!query || !candidate) return 0;
   if (query === candidate) return 1;
+
+  // Codici corti (es. Scaffale C, Ripiano 2) devono combaciare solo esattamente.
+  // Evita falsi positivi come "carb" che contiene la lettera di uno scaffale.
+  if (query.length <= 2 || candidate.length <= 2) return 0;
+
   if (candidate.includes(query) || query.includes(candidate)) {
     const ratio = Math.min(query.length, candidate.length) / Math.max(query.length, candidate.length);
     return 0.82 + ratio * 0.16;
   }
-
-  if (query.length <= 2 || candidate.length <= 2) return 0;
 
   const distance = levenshtein(query, candidate);
   const similarity = 1 - distance / Math.max(query.length, candidate.length);
