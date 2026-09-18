@@ -10,7 +10,7 @@ import {
   suggestInventoryLocations,
 } from './search-ai.js';
 import {
-  orderRoughNotes, suggestInventoryTerms, normalizeWorkshopDictation,
+  orderRoughNotes, rewriteWorkshopNotes, suggestInventoryTerms, normalizeWorkshopDictation,
 } from './notes-ai.js';
 import { scanShelf } from './shelf-scanner.js';
 import { startDictation, stopDictation, cancelDictation, isSpeechAvailable } from './speech.js';
@@ -212,6 +212,16 @@ async function renderVehicleDetail() {
     state.photoVehicleId = vehicle.id;
     $('#photoDialog').showModal();
   };
+
+  $('#vehicleGallery img[data-photo-id]').forEach(img => {
+    img.onclick = () => {
+      const dialog = $('#photoViewerDialog');
+      const viewer = $('#photoViewerImage');
+      viewer.src = img.src;
+      viewer.alt = img.alt || 'Foto veicolo';
+      dialog.showModal();
+    };
+  });
 
   const terms = suggestInventoryTerms(
     [vehicle.declaredProblems, vehicle.foundProblems].filter(Boolean).join(' ')
@@ -922,8 +932,9 @@ function wireUi() {
         toast('Scrivi prima qualche appunto.');
         return;
       }
-      field.value = orderRoughNotes(field.value);
-      toast('Appunti riordinati');
+      field.value = rewriteWorkshopNotes(field.value, button.dataset.orderTarget);
+      field.dispatchEvent(new Event('input', { bubbles: true }));
+      toast('Testo riscritto meglio');
     };
   });
 
