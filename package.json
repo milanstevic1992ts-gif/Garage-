@@ -1,0 +1,20 @@
+{
+  "name": "garage",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Garage - frontend Android offline-first per officina",
+  "scripts": {
+    "serve": "npx --yes http-server www -p 8080 -c-1",
+    "android:add": "npx cap add android",
+    "android:sync": "npx cap sync android && bash scripts/patch-android.sh",
+    "apk": "npx cap sync android && bash scripts/patch-android.sh && cd android && ./gradlew assembleDebug"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
+    "@capacitor/core": "^7.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.0.0"
+  }
+}
