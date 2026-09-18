@@ -17,19 +17,72 @@ function cleanSentence(value) {
   return text;
 }
 
-export function orderRoughNotes(value = '') {
+const WORKSHOP_POLISH = [
+  [/\bnon parte bene\b/gi, 'presenta difficoltà di avviamento'],
+  [/\bfa fatica (?:a|ad) (?:partire|accendersi)\b/gi, 'presenta difficoltà di avviamento'],
+  [/\bnon parte\b/gi, 'non si avvia'],
+  [/\bsi spegne\b/gi, 'tende a spegnersi'],
+  [/\bnon tiene il minimo\b/gi, 'presenta un minimo irregolare'],
+  [/\bfa (?:un )?rumore\b/gi, 'presenta un rumore anomalo'],
+  [/\bfrena male\b/gi, 'presenta una frenata poco efficace'],
+  [/\bperde olio\b/gi, "presenta una perdita d'olio"],
+  [/\bperde acqua\b/gi, 'presenta una perdita di liquido'],
+  [/\bvibra molto\b/gi, 'presenta vibrazioni anomale'],
+];
+
+function polishWorkshopSentence(value, context = '') {
+  let text = normalizeWorkshopDictation(value)
+    .replace(/^[-–—•\s]+/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (context === 'declaredProblems') {
+    text = text
+      .replace(/^(?:il\s+)?cliente\s+(?:dice|riferisce|segnala)(?:\s+che)?\s*/i, '')
+      .replace(/^dice\s+che\s+/i, '');
+  }
+  if (context === 'foundProblems') {
+    text = text
+      .replace(/^(?:ho|abbiamo)\s+(?:visto|notato|riscontrato|trovato)(?:\s+che)?\s*/i, '');
+  }
+
+  for (const [pattern, replacement] of WORKSHOP_POLISH) {
+    text = text.replace(pattern, replacement);
+  }
+
+  return cleanSentence(text);
+}
+
+export function rewriteWorkshopNotes(value = '', context = '') {
   const raw = String(value || '').trim();
   if (!raw) return '';
 
-  const parts = raw
+  const normalized = raw
     .replace(/\r/g, '\n')
+    .replace(/\s+(?:poi|inoltre|in più)\s+/gi, '; ');
+
+  let chunks = normalized
     .split(/\n+|[;•]+|(?<=[.!?])\s+/)
-    .map(cleanSentence)
+    .map(x => x.trim())
     .filter(Boolean);
 
-  if (!parts.length) return raw;
+  // Le note dettate spesso arrivano come una lunga frase separata da virgole.
+  if (chunks.length === 1 && (normalized.match(/,/g) || []).length >= 1) {
+    const commaParts = normalized.split(/,\s*/).map(x => x.trim()).filter(Boolean);
+    if (commaParts.length > 1 && commaParts.every(x => x.length >= 4)) chunks = commaParts;
+  }
+
+  const parts = chunks
+    .map(x => polishWorkshopSentence(x, context))
+    .filter(Boolean);
+
+  if (!parts.length) return cleanSentence(raw);
   if (parts.length === 1) return parts[0];
   return parts.map(x => `• ${x}`).join('\n');
+}
+
+export function orderRoughNotes(value = '') {
+  return rewriteWorkshopNotes(value);
 }
 
 const SEARCH_HINTS = [
