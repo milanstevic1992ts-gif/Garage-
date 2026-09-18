@@ -112,3 +112,24 @@ possibile usare **Riordina appunti**.
 
 La build Android usa `@capgo/capacitor-speech-recognition` v7 con lingua
 `it-IT`, risultati parziali inline e riconoscimento on-device quando supportato.
+
+
+## Targa e chilometri verificati
+
+La scheda veicolo contiene un riquadro **Chilometri verificati** separato dai km
+attuali.
+
+Garage può aprire:
+
+- Portale dell'Automobilista per storico revisioni e km registrati;
+- ACI / Infotarga per marca, modello e dati tecnici.
+
+Il Portale dell'Automobilista richiede CAPTCHA, quindi il frontend non effettua
+scraping automatico. I dati verificati vengono salvati con fonte, data
+revisione e data della verifica e sono inclusi nei backup.
+
+Se i km attuali sono inferiori ai km dell'ultima revisione, Garage mostra un
+avviso evidente.
+
+Il futuro Gestionale Garage PC potrà riempire gli stessi campi automaticamente
+tramite API autorizzate Motorizzazione/PRA o provider automotive.
