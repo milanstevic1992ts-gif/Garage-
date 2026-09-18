@@ -9,7 +9,9 @@ import {
   smartInventorySearch, smartVehicleSearch, inventoryQueryHint,
   suggestInventoryLocations,
 } from './search-ai.js';
-import { orderRoughNotes, suggestInventoryTerms } from './notes-ai.js';
+import {
+  orderRoughNotes, suggestInventoryTerms, normalizeWorkshopDictation,
+} from './notes-ai.js';
 import { scanShelf } from './shelf-scanner.js';
 import { startDictation, stopDictation, cancelDictation, isSpeechAvailable } from './speech.js';
 
@@ -609,7 +611,7 @@ async function syncAll() {
 
 
 function appendDictation(field, text) {
-  const clean = String(text || '').trim();
+  const clean = normalizeWorkshopDictation(text);
   if (!field || !clean) return;
   const current = field.value.trim();
   field.value = current ? `${current}\n${clean}` : clean;
