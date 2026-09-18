@@ -382,7 +382,7 @@ function renderInventory() {
         <p class="muted" style="margin:10px 0 0">${withdrawn ? 'Non disponibile' : `${item.quantity ?? 0} pz disponibili`}</p>
         <div class="inventory-actions">
           ${withdrawn ? '' : `<button class="withdraw-btn" data-withdraw-id="${item.id}">PRELEVA 1</button>`}
-          <button class="putaway-btn" data-putaway-id="${item.id}">${withdrawn ? 'RIPONI' : 'POSIZIONE'}</button>
+          <button class="putaway-btn" data-putaway-id="${item.id}">${withdrawn ? 'RIPONI' : (item.shelf ? 'SPOSTA' : 'METTI SU SCAFFALE')}</button>
         </div>
       </article>`;
     }).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
@@ -643,6 +643,20 @@ function wireUi() {
     );
   };
   $('#scanShelfNewButton').onclick = () => scanIntoForm($('#inventoryForm'));
+  ['name','category','brand','compatibleWith'].forEach(fieldName => {
+    $('#inventoryForm').elements[fieldName].addEventListener('input', () => {
+      const draft = draftFromInventoryForm();
+      if (![draft.name,draft.category,draft.brand,draft.compatibleWith].some(Boolean)) {
+        $('#newItemLocationSuggestions').innerHTML = '';
+        return;
+      }
+      renderLocationSuggestions(
+        $('#newItemLocationSuggestions'),
+        draft,
+        location => applyLocation($('#inventoryForm'), location),
+      );
+    });
+  });
   $('#suggestShelfPlacementButton').onclick = async () => {
     const item = await inventory.get($('#placementForm').elements.itemId.value);
     if (item) renderLocationSuggestions(
