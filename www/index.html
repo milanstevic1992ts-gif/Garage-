@@ -205,6 +205,17 @@
         <button type="button" class="ai-action" data-order-target="internalNotes">✦ Riscrivi meglio</button>
       </label>
 
+      <div class="job-photo-editor">
+        <div class="job-photo-head">
+          <strong>Fotografie intervento</strong>
+          <button type="button" class="secondary job-photo-add" id="jobPhotoButton">📷 Aggiungi foto</button>
+        </div>
+        <div class="job-photo-preview" id="jobPhotoPreview">
+          <span class="job-photo-empty">Nessuna foto aggiunta</span>
+        </div>
+      </div>
+      <input id="jobPhotoInput" class="hidden" type="file" accept="image/*" capture="environment" multiple>
+
       <div class="voice-panel" data-voice-panel>
         <div class="voice-main">
           <button type="button" class="voice-mic" data-voice-toggle aria-label="Detta intervento">🎙</button>
