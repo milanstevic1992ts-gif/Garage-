@@ -518,7 +518,11 @@ h1,h2,h3{letter-spacing:-.03em}
 .job-card small,.muted{color:var(--muted)}
 
 /* INVENTORY */
-.inventory-view{padding-top:calc(28px + env(safe-area-inset-top))}
+.inventory-view{
+  position:relative;
+  padding-top:calc(28px + env(safe-area-inset-top));
+  padding-bottom:145px;
+}
 .inventory-hero-head{
   display:flex;
   align-items:flex-start;
@@ -541,14 +545,35 @@ h1,h2,h3{letter-spacing:-.03em}
   color:#a3afb9;
   font-size:12px;
 }
-.inventory-add-icon{
+.inventory-fab{
+  position:fixed;
+  z-index:35;
+  right:max(18px,calc((100vw - 520px)/2 + 18px));
+  bottom:calc(76px + env(safe-area-inset-bottom));
+  min-width:168px;
+  height:62px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:0 20px 0 12px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:31px;
+  color:#fff;
+  background:linear-gradient(180deg,var(--accent-hi),var(--accent));
+  box-shadow:0 16px 38px rgba(0,0,0,.42),0 7px 24px rgba(255,106,24,.34);
+  font-size:14px;
+  font-weight:950;
+}
+.inventory-fab-plus{
   width:40px;
   height:40px;
-  border:1px solid #5a321c;
-  border-radius:11px;
-  background:#121a21;
-  color:var(--accent);
-  font-size:19px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:rgba(0,0,0,.17);
+  font-size:30px;
+  line-height:1;
 }
 .ai-hint{
   min-height:42px;
@@ -601,6 +626,10 @@ h1,h2,h3{letter-spacing:-.03em}
   object-fit:cover;
   border-radius:12px;
   background:#111820;
+}
+.part-thumb[data-inventory-photo="1"]{
+  cursor:pointer;
+  border:1px solid #40505d;
 }
 .inventory-product-copy{min-width:0}
 .inventory-product h3{
@@ -845,6 +874,54 @@ h1,h2,h3{letter-spacing:-.03em}
   font-size:10px;
   font-weight:900;
 }
+.inventory-photo-editor{
+  display:grid;
+  grid-template-columns:112px 1fr;
+  gap:12px;
+  align-items:center;
+  margin-bottom:14px;
+}
+.inventory-photo-preview{
+  width:112px;
+  height:112px;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  border:1px solid #33424f;
+  border-radius:14px;
+  background:#091016;
+}
+.inventory-photo-preview img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.inventory-photo-preview.empty{
+  color:#8794a0;
+  text-align:center;
+}
+.inventory-photo-preview.empty span{
+  display:block;
+  font-size:30px;
+}
+.inventory-photo-preview.empty small{
+  display:block;
+  margin-top:3px;
+  font-size:10px;
+}
+.inventory-photo-actions{
+  display:grid;
+  gap:8px;
+}
+.inventory-photo-remove{
+  border:0;
+  background:transparent;
+  color:#ff9a95;
+  text-align:left;
+  font-size:10px;
+  font-weight:900;
+}
+
 .placement-actions{
   display:grid;
   grid-template-columns:1fr 1fr;
@@ -936,6 +1013,9 @@ h1,h2,h3{letter-spacing:-.03em}
   .vehicle-summary-card{grid-template-columns:105px 1fr}
   .vehicle-summary-image{width:105px;height:110px}
   .grid2,.grid3{grid-template-columns:1fr}
+  .inventory-photo-editor{grid-template-columns:96px 1fr}
+  .inventory-photo-preview{width:96px;height:96px}
+  .inventory-fab{right:14px;min-width:154px;height:58px}
   .voice-targets{margin-left:0}
 }
 
