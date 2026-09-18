@@ -46,7 +46,7 @@ export async function startDictation({ onPartial, onState, onError } = {}) {
 
   let useOnDeviceRecognition = false;
   try {
-    const local = await p.isOnDeviceRecognitionAvailable();
+    const local = await p.isOnDeviceRecognitionAvailable({ language: 'it-IT' });
     useOnDeviceRecognition = !!local?.available;
   } catch (_) {}
 
