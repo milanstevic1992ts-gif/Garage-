@@ -96,3 +96,19 @@ La funzione pulisce e struttura appunti grezzi senza aggiungere informazioni non
 
 Dai problemi registrati Garage può inoltre proporre termini da cercare nel
 magazzino. Sono suggerimenti di ricerca, non diagnosi automatiche.
+
+
+## Dettatura vocale
+
+Garage include un pannello microfono grande e visibile nei moduli dove si scrivono appunti.
+
+- **Nuovo ingresso**: Problemi dichiarati / Problemi riscontrati.
+- **Intervento**: Lavoro / Cliente / Nota interna.
+- **Ricambio**: Note ricambio.
+
+Il pannello mostra il testo riconosciuto in tempo reale. Il testo viene aggiunto
+al campo selezionato senza cancellare quello già presente. Dopo la dettatura è
+possibile usare **Riordina appunti**.
+
+La build Android usa `@capgo/capacitor-speech-recognition` v7 con lingua
+`it-IT`, risultati parziali inline e riconoscimento on-device quando supportato.
