@@ -5,6 +5,7 @@ import {
 import { customerName, vehicleLabel } from './archive.js';
 import * as backup from './backup.js';
 import * as destinations from './destinations.js';
+import { smartInventorySearch, smartVehicleSearch, inventoryQueryHint } from './search-ai.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -70,17 +71,8 @@ function vehicleCard(vehicle) {
 }
 
 function renderVehicleList() {
-  const q = $('#vehicleSearch').value.trim().toLowerCase();
-  const normalized = normalizePlate(q);
-
-  const list = state.vehicles.filter(v => {
-    if (!q) return true;
-    const values = [
-      v.plate, v.normalizedPlate, v.firstName, v.lastName, customerName(v),
-      v.phone, v.brand, v.model,
-    ].filter(Boolean).map(x => String(x).toLowerCase());
-    return values.some(x => x.includes(q)) || (normalized && v.normalizedPlate.includes(normalized));
-  });
+  const q = $('#vehicleSearch').value.trim();
+  const list = smartVehicleSearch(state.vehicles, q);
 
   $('#vehicleResults').innerHTML = list.length
     ? list.map(vehicleCard).join('')
@@ -342,17 +334,12 @@ function inventoryLocation(item) {
 
 function renderInventory() {
   refreshInventory().then(() => {
-    const q = $('#inventorySearch').value.trim().toLowerCase();
-    const tokens = q.split(/\s+/).filter(Boolean);
-
-    const list = state.inventory.filter(item => {
-      if (!tokens.length) return true;
-      const hay = [
-        item.name,item.category,item.brand,item.partNumber,item.compatibleWith,
-        item.shelf,item.level,item.drawer,item.condition,item.notes,
-      ].filter(Boolean).join(' ').toLowerCase();
-      return tokens.every(token => hay.includes(token));
-    });
+    const q = $('#inventorySearch').value.trim();
+    const list = smartInventorySearch(state.inventory, q);
+    const hint = inventoryQueryHint(q);
+    $('#inventoryAiHint').textContent = q
+      ? (hint ? `Mini AI · ${hint}` : 'Mini AI · ricerca intelligente attiva')
+      : 'Mini AI · prova “carb Betwin verde scaffale C ripiano 2”';
 
     $('#inventoryResults').innerHTML = list.length ? list.map(item => `
       <article class="inventory-card">
