@@ -1,0 +1,8 @@
+{
+  "appId": "it.ge360.garage",
+  "appName": "Garage",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0a0d12"
+  }
+}
