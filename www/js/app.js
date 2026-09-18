@@ -698,11 +698,6 @@ async function startVoicePanel(panel) {
           setTimeout(() => finishVoicePanel(panel, true), 0);
         }
       },
-      onLevel: level => {
-        const scale = 1 + Math.min(.12, Math.max(0, level) * .12);
-        const button = panel.querySelector('[data-voice-toggle]');
-        button?.style.setProperty('--mic-scale', String(scale));
-      },
       onError: message => {
         resetVoicePanel(panel, 'Errore microfono');
         toast(message);
