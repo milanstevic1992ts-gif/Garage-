@@ -132,6 +132,21 @@
         <textarea name="foundProblems" rows="3" placeholder="Cosa hai riscontrato?"></textarea>
         <button type="button" class="ai-action" data-order-target="foundProblems">✦ Riordina appunti</button>
       </label>
+      <div class="voice-panel" data-voice-panel>
+        <div class="voice-main">
+          <button type="button" class="voice-mic" data-voice-toggle aria-label="Detta appunti">🎙</button>
+          <div class="voice-copy">
+            <strong>Detta appunti</strong>
+            <span data-voice-status>Tocca il microfono e parla</span>
+          </div>
+        </div>
+        <div class="voice-targets">
+          <button type="button" class="active" data-voice-target="declaredProblems">Dichiarati</button>
+          <button type="button" data-voice-target="foundProblems">Riscontrati</button>
+        </div>
+        <div class="voice-preview" data-voice-preview>Il testo dettato apparirà qui.</div>
+      </div>
+
       <label>Stato
         <select name="status">
           <option value="da_controllare">Da controllare</option>
@@ -169,6 +184,23 @@
         <textarea name="internalNotes" rows="2"></textarea>
         <button type="button" class="ai-action" data-order-target="internalNotes">✦ Riordina appunti</button>
       </label>
+
+      <div class="voice-panel" data-voice-panel>
+        <div class="voice-main">
+          <button type="button" class="voice-mic" data-voice-toggle aria-label="Detta intervento">🎙</button>
+          <div class="voice-copy">
+            <strong>Detta appunti</strong>
+            <span data-voice-status>Tocca il microfono e parla</span>
+          </div>
+        </div>
+        <div class="voice-targets">
+          <button type="button" class="active" data-voice-target="workDone">Lavoro</button>
+          <button type="button" data-voice-target="customerNotes">Cliente</button>
+          <button type="button" data-voice-target="internalNotes">Nota interna</button>
+        </div>
+        <div class="voice-preview" data-voice-preview>Il testo dettato apparirà qui.</div>
+      </div>
+
       <div class="form-error" id="jobFormError"></div>
       <button class="primary full" type="submit">Registra intervento</button>
     </form>
@@ -229,6 +261,21 @@
       </div>
       <div id="newItemLocationSuggestions" class="suggestions"></div>
       <label>Note<textarea name="notes" rows="2"></textarea></label>
+
+      <div class="voice-panel compact-voice" data-voice-panel>
+        <div class="voice-main">
+          <button type="button" class="voice-mic" data-voice-toggle aria-label="Detta note ricambio">🎙</button>
+          <div class="voice-copy">
+            <strong>Detta note ricambio</strong>
+            <span data-voice-status>Tocca il microfono e parla</span>
+          </div>
+        </div>
+        <div class="voice-targets hidden">
+          <button type="button" class="active" data-voice-target="notes">Note</button>
+        </div>
+        <div class="voice-preview" data-voice-preview>Il testo dettato apparirà qui.</div>
+      </div>
+
       <div class="form-error" id="inventoryFormError"></div>
       <button class="primary full" type="submit">Salva ricambio</button>
     </form>
