@@ -11,7 +11,9 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <button class="icon-btn top-backup" id="backupShortcut" aria-label="Backup">☁</button>
+      <button class="icon-btn top-backup" id="backupShortcut" aria-label="Backup">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
+</button>
     </header>
 
     <main id="main">
@@ -44,7 +46,7 @@
 
         <div class="list-heading">
           <h3>Ultimi veicoli</h3>
-          <span>Vedi tutti ›</span>
+          <span id="showAllVehicles">Vedi tutti ›</span>
         </div>
         <div id="vehicleResults" class="stack vehicle-stack"></div>
       </section>
