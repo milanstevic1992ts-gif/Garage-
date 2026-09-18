@@ -71,3 +71,32 @@ Stati:
 - L'UUID è l'identificativo stabile usato da foto e interventi.
 - Le fotografie restano file/blob, non vengono serializzate nei JSON.
 - I backup sono copie: il database locale del telefono resta la fonte primaria.
+
+
+## StockMovement
+
+- id UUID;
+- itemId;
+- itemName snapshot;
+- type: intake / withdraw / putaway / relocate;
+- delta;
+- quantityAfter;
+- shelf / level / drawer snapshot;
+- createdAt.
+
+Un pezzo con quantità `0` non viene cancellato: diventa non disponibile e
+sparisce dalla lista principale. Rimane consultabile attivando "Mostra prelevati".
+
+## Scaffali
+
+La posizione può essere:
+
+- suggerita da Garage in base a categoria, marca, compatibilità e pezzi simili;
+- inserita manualmente;
+- acquisita da QR scaffale.
+
+Formato QR consigliato:
+
+`GARAGE:SCAFFALE:B:RIPIANO:2`
+
+Sono accettati anche `SCAFFALE B` e codici scaffale brevi.
