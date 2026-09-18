@@ -72,3 +72,27 @@ Ogni ricambio può avere:
 
 Il futuro **Gestionale Garage PC** verrà collegato in seguito tramite API, senza
 rendere il frontend dipendente dal server.
+
+
+## Magazzino adattivo
+
+- **PRELEVA 1** scala la quantità.
+- A quantità zero il pezzo sparisce dalla lista disponibile ma resta nello storico.
+- **Mostra prelevati** permette di recuperarlo.
+- **RIPONI** rimette il pezzo a stock.
+- **METTI SU SCAFFALE / SPOSTA** aggiorna la posizione senza cancellare il pezzo.
+- Garage suggerisce scaffale e ripiano osservando dove sono già pezzi simili.
+- La posizione può essere inserita manualmente oppure acquisita da QR scaffale.
+- Ogni entrata, prelievo, riposizionamento e ripristino viene salvato nei movimenti.
+
+Formato QR consigliato:
+
+`GARAGE:SCAFFALE:B:RIPIANO:2`
+
+## Appunti intelligenti
+
+Problemi dichiarati, problemi riscontrati e interventi hanno **Riordina appunti**.
+La funzione pulisce e struttura appunti grezzi senza aggiungere informazioni non scritte.
+
+Dai problemi registrati Garage può inoltre proporre termini da cercare nel
+magazzino. Sono suggerimenti di ricerca, non diagnosi automatiche.
