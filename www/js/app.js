@@ -356,14 +356,20 @@ function inventoryLocation(item) {
 function renderInventory() {
   refreshInventory().then(() => {
     const q = $('#inventorySearch').value.trim();
-    const list = smartInventorySearch(state.inventory, q);
+    const showWithdrawn = $('#showWithdrawn')?.checked;
+    const source = state.inventory.filter(item =>
+      showWithdrawn || Number(item.quantity || 0) > 0
+    );
+    const list = smartInventorySearch(source, q);
     const hint = inventoryQueryHint(q);
     $('#inventoryAiHint').textContent = q
       ? (hint ? `Mini AI · ${hint}` : 'Mini AI · ricerca intelligente attiva')
       : 'Mini AI · prova “carb Betwin verde scaffale C ripiano 2”';
 
-    $('#inventoryResults').innerHTML = list.length ? list.map(item => `
-      <article class="inventory-card">
+    $('#inventoryResults').innerHTML = list.length ? list.map(item => {
+      const withdrawn = Number(item.quantity || 0) <= 0;
+      return `
+      <article class="inventory-card ${withdrawn ? 'withdrawn' : ''}">
         <div class="inventory-top">
           <div>
             <h3 style="margin-bottom:4px">${esc(item.name)}</h3>
@@ -372,24 +378,22 @@ function renderInventory() {
           <span class="condition ${esc(item.condition || 'buono')}">${esc((item.condition || 'buono')[0].toUpperCase() + (item.condition || 'buono').slice(1))}</span>
         </div>
         ${item.compatibleWith ? `<p>Compatibile: <b>${esc(item.compatibleWith)}</b></p>` : ''}
-        <div class="location">${esc(inventoryLocation(item))}</div>
-        <div class="qty-actions">
-          <button data-adjust-id="${item.id}" data-delta="-1">−</button>
-          <strong>${item.quantity ?? 0} pz</strong>
-          <button data-adjust-id="${item.id}" data-delta="1">+</button>
+        <div class="location">${withdrawn ? 'PRELEVATO · ultima posizione: ' : ''}${esc(inventoryLocation(item))}</div>
+        <p class="muted" style="margin:10px 0 0">${withdrawn ? 'Non disponibile' : `${item.quantity ?? 0} pz disponibili`}</p>
+        <div class="inventory-actions">
+          ${withdrawn ? '' : `<button class="withdraw-btn" data-withdraw-id="${item.id}">PRELEVA 1</button>`}
+          <button class="putaway-btn" data-putaway-id="${item.id}">${withdrawn ? 'RIPONI' : 'POSIZIONE'}</button>
         </div>
-      </article>
-    `).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
+      </article>`;
+    }).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
 
-    $$('[data-adjust-id]').forEach(button => {
+    $('[data-withdraw-id]').forEach(button => {
+      button.onclick = () => withdrawInventoryItem(button.dataset.withdrawId);
+    });
+    $('[data-putaway-id]').forEach(button => {
       button.onclick = async () => {
-        const item = await inventory.get(button.dataset.adjustId);
-        const next = Math.max(0, Number(item.quantity || 0) + Number(button.dataset.delta));
-        item.quantity = next;
-        item.updatedAt = nowIso();
-        await inventory.save(item);
-        backup.syncInventory().catch(() => {});
-        renderInventory();
+        const item = await inventory.get(button.dataset.putawayId);
+        openPlacement(item, Number(item.quantity || 0) <= 0 ? 'restock' : 'relocate');
       };
     });
   });
