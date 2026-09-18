@@ -228,6 +228,7 @@ function vehicleCard(vehicle) {
         </div>
         <h3>${esc(customerName(vehicle))}</h3>
         <p>${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${vehicle.mileageKm ? ` · ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
+        ${vehicle.verifiedMileageKm ? `<small class="verified-mini">✓ ${Number(vehicle.verifiedMileageKm).toLocaleString('it-IT')} km verificati</small>` : ''}
       </div>
       <span class="card-chevron">›</span>
     </button>
