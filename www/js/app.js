@@ -68,14 +68,21 @@ async function refreshVehicles() {
 }
 
 function vehicleCard(vehicle) {
+  const bikeAsset = /ducati|monster|moto/i.test([vehicle.brand, vehicle.model].filter(Boolean).join(' '))
+    ? 'assets/vehicle-bike.svg'
+    : 'assets/vehicle-scooter.svg';
   return `
-    <button class="vehicle-card" data-vehicle-id="${vehicle.id}">
-      <div class="card-top">
-        <span class="plate">${esc(vehicle.plate)}</span>
-        <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
+    <button class="vehicle-card premium-vehicle-card" data-vehicle-id="${vehicle.id}">
+      <img class="vehicle-thumb" src="${bikeAsset}" alt="">
+      <div class="vehicle-card-main">
+        <div class="vehicle-card-line">
+          <span class="plate">${esc(vehicle.plate)}</span>
+          <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
+        </div>
+        <h3>${esc(customerName(vehicle))}</h3>
+        <p>${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${vehicle.mileageKm ? ` · ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
       </div>
-      <h3>${esc(customerName(vehicle))}</h3>
-      <p>${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${vehicle.mileageKm ? ` · ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
+      <span class="card-chevron">›</span>
     </button>
   `;
 }
@@ -115,30 +122,35 @@ async function renderVehicleDetail() {
   $('#vehicleView').innerHTML = `
     <div class="detail-head">
       <button class="back-btn" id="backHome">‹ Garage</button>
-      <button class="secondary" id="editVehicleButton">Modifica</button>
+      <button class="edit-pill" id="editVehicleButton">✎ Modifica</button>
     </div>
 
-    <div class="vehicle-card">
-      <div class="card-top">
-        <span class="plate">${esc(vehicle.plate)}</span>
-        <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
-      </div>
-      <h2 style="margin:14px 0 4px">${esc(customerName(vehicle))}</h2>
-      <p>${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${vehicle.mileageKm ? ` · ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
-      <div class="quick-actions">
-        ${tel ? `<a href="tel:${esc(tel)}">☎<br>Chiama</a>` : '<button disabled>☎<br>Telefono</button>'}
-        <button id="addJobButton">🔧<br>Intervento</button>
-        <button id="addPhotoButton">📷<br>Foto</button>
+    <div class="vehicle-summary-card">
+      <img class="vehicle-summary-image" src="assets/vehicle-scooter.svg" alt="">
+      <div class="vehicle-summary-copy">
+        <div class="vehicle-summary-top">
+          <span class="plate">${esc(vehicle.plate)}</span>
+          <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
+        </div>
+        <h2>${esc(customerName(vehicle))}</h2>
+        <p>${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${vehicle.mileageKm ? ` · ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
+        ${tel ? `<a class="vehicle-phone" href="tel:${esc(tel)}">☎ Tel. ${esc(vehicle.phone)}</a>` : ''}
       </div>
     </div>
 
-    <div class="problem-grid">
-      <div class="problem-card">
-        <small>PROBLEMI DICHIARATI</small>
+    <div class="quick-actions premium-actions">
+      ${tel ? `<a href="tel:${esc(tel)}">☎ <span>Chiama</span></a>` : '<button disabled>☎ <span>Telefono</span></button>'}
+      <button id="addJobButton">🔧 <span>Intervento</span></button>
+      <button id="addPhotoButton">▣ <span>Foto</span></button>
+    </div>
+
+    <div class="problem-stack">
+      <div class="problem-card premium-problem-card">
+        <div class="problem-title-row"><small>▤ &nbsp; PROBLEMI DICHIARATI</small><span>Modifica</span></div>
         <p>${esc(vehicle.declaredProblems || '—')}</p>
       </div>
-      <div class="problem-card">
-        <small>PROBLEMI RISCONTRATI</small>
+      <div class="problem-card premium-problem-card">
+        <div class="problem-title-row"><small>🔧 &nbsp; PROBLEMI RISCONTRATI</small><span>Modifica</span></div>
         <p>${esc(vehicle.foundProblems || '—')}</p>
         <div class="search-suggestions" id="problemSearchSuggestions"></div>
       </div>
@@ -366,6 +378,8 @@ function renderInventory() {
     );
     const list = smartInventorySearch(source, q);
     const hint = inventoryQueryHint(q);
+    const resultMeta = $('#inventoryResultMeta');
+    if (resultMeta) resultMeta.textContent = list.length === 1 ? '1 risultato' : `${list.length} risultati`;
     $('#inventoryAiHint').textContent = q
       ? (hint ? `Mini AI · ${hint}` : 'Mini AI · ricerca intelligente attiva')
       : 'Mini AI · prova “carb Betwin verde scaffale C ripiano 2”';
@@ -373,20 +387,23 @@ function renderInventory() {
     $('#inventoryResults').innerHTML = list.length ? list.map(item => {
       const withdrawn = Number(item.quantity || 0) <= 0;
       return `
-      <article class="inventory-card ${withdrawn ? 'withdrawn' : ''}">
-        <div class="inventory-top">
-          <div>
-            <h3 style="margin-bottom:4px">${esc(item.name)}</h3>
+      <article class="inventory-card premium-inventory-card ${withdrawn ? 'withdrawn' : ''}">
+        <div class="inventory-product">
+          <img class="part-thumb" src="assets/part-carb.svg" alt="">
+          <div class="inventory-product-copy">
+            <h3>${esc(item.name)}</h3>
             <p class="muted">${esc([item.category,item.brand,item.partNumber].filter(Boolean).join(' · '))}</p>
+            ${item.compatibleWith ? `<p class="compatibility">Compatibile: ${esc(item.compatibleWith)}</p>` : ''}
+            <div class="location">⌖ &nbsp; ${withdrawn ? 'PRELEVATO · ultima posizione: ' : ''}${esc(inventoryLocation(item))}</div>
+            <div class="inventory-state-row">
+              <span class="condition ${esc(item.condition || 'buono')}">${esc((item.condition || 'buono')[0].toUpperCase() + (item.condition || 'buono').slice(1))}</span>
+              <span>${withdrawn ? 'Non disponibile' : `${item.quantity ?? 0} pz disponibile${Number(item.quantity||0) === 1 ? '' : 'i'}`}</span>
+            </div>
           </div>
-          <span class="condition ${esc(item.condition || 'buono')}">${esc((item.condition || 'buono')[0].toUpperCase() + (item.condition || 'buono').slice(1))}</span>
         </div>
-        ${item.compatibleWith ? `<p>Compatibile: <b>${esc(item.compatibleWith)}</b></p>` : ''}
-        <div class="location">${withdrawn ? 'PRELEVATO · ultima posizione: ' : ''}${esc(inventoryLocation(item))}</div>
-        <p class="muted" style="margin:10px 0 0">${withdrawn ? 'Non disponibile' : `${item.quantity ?? 0} pz disponibili`}</p>
         <div class="inventory-actions">
-          ${withdrawn ? '' : `<button class="withdraw-btn" data-withdraw-id="${item.id}">PRELEVA 1</button>`}
-          <button class="putaway-btn" data-putaway-id="${item.id}">${withdrawn ? 'RIPONI' : (item.shelf ? 'SPOSTA' : 'METTI SU SCAFFALE')}</button>
+          ${withdrawn ? '' : `<button class="withdraw-btn" data-withdraw-id="${item.id}">▣ &nbsp; PRELEVA 1</button>`}
+          <button class="putaway-btn" data-putaway-id="${item.id}">⇄ &nbsp; ${withdrawn ? 'RIPONI' : (item.shelf ? 'SPOSTA' : 'METTI SU SCAFFALE')}</button>
         </div>
       </article>`;
     }).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
