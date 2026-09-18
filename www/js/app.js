@@ -255,7 +255,7 @@ async function renderVehicleDetail() {
     };
   });
 
-  $('#vehicleGallery img[data-photo-id], .job-photo-thumb[data-job-photo="1"]').forEach(img => {
+  $$('#vehicleGallery img[data-photo-id], .job-photo-thumb[data-job-photo="1"]').forEach(img => {
     img.onclick = () => {
       const dialog = $('#photoViewerDialog');
       const viewer = $('#photoViewerImage');
@@ -322,14 +322,14 @@ function renderVehiclePickers() {
     <button type="button" role="radio" aria-checked="${key === color}" aria-label="${entry.label}" title="${entry.label}"
       class="swatch ${key === color ? 'active' : ''}" style="--swatch:${entry.hex}" data-color="${key}"></button>`).join('');
 
-  $('#vehicleTypePicker [data-type]').forEach(button => {
+  $$('#vehicleTypePicker [data-type]').forEach(button => {
     button.onclick = () => {
       form.elements.vehicleType.value = button.dataset.type;
       renderVehiclePickers();
     };
   });
 
-  $('#vehicleColorPicker [data-color]').forEach(button => {
+  $$('#vehicleColorPicker [data-color]').forEach(button => {
     button.onclick = () => {
       form.elements.color.value = form.elements.color.value === button.dataset.color ? '' : button.dataset.color;
       renderVehiclePickers();
