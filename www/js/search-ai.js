@@ -318,3 +318,103 @@ export function inventoryQueryHint(query) {
   if (parsed.location.drawer) parts.push(`Cassetto ${parsed.location.drawer}`);
   return parts.join(' · ');
 }
+
+
+export function parseShelfCode(value = '') {
+  const raw = String(value || '').trim();
+  if (!raw) return null;
+
+  const normalized = raw.toUpperCase().replace(/\s+/g, ' ').trim();
+
+  // Formati consigliati:
+  // GARAGE:SCAFFALE:B
+  // GARAGE:SCAFFALE:B:RIPIANO:2
+  // SCAFFALE B
+  // B
+  let match = normalized.match(/^GARAGE[:| -]+SCAFFALE[:| -]+([A-Z0-9]+)(?:[:| -]+RIPIANO[:| -]+([A-Z0-9]+))?(?:[:| -]+CASSETTO[:| -]+([A-Z0-9]+))?$/);
+  if (!match) {
+    match = normalized.match(/^SCAFFALE\s*[: -]?\s*([A-Z0-9]+)(?:\s+RIPIANO\s*[: -]?\s*([A-Z0-9]+))?(?:\s+CASSETTO\s*[: -]?\s*([A-Z0-9]+))?$/);
+  }
+  if (!match && /^[A-Z0-9]{1,4}$/.test(normalized)) {
+    match = [normalized, normalized, '', ''];
+  }
+  if (!match) return null;
+
+  return {
+    shelf: match[1] || '',
+    level: match[2] || '',
+    drawer: match[3] || '',
+  };
+}
+
+function exactSame(a, b) {
+  return normalize(a) && normalize(a) === normalize(b);
+}
+
+export function suggestInventoryLocations(items, draft, limit = 3) {
+  const groups = new Map();
+
+  for (const item of items) {
+    if (!item.shelf || Number(item.quantity || 0) <= 0) continue;
+    if (draft.id && item.id === draft.id) continue;
+
+    let score = 0;
+    const reasons = [];
+
+    if (exactSame(item.category, draft.category)) {
+      score += 8;
+      reasons.push('stessa categoria');
+    }
+    if (exactSame(item.brand, draft.brand)) {
+      score += 5;
+      reasons.push('stessa marca');
+    }
+    if (exactSame(item.compatibleWith, draft.compatibleWith)) {
+      score += 9;
+      reasons.push('stessa compatibilità');
+    }
+
+    const nameTokens = rawTokens(draft.name);
+    for (const token of nameTokens) {
+      const s = textMatchScore(token, item.name);
+      if (s > 0.78) {
+        score += 5;
+        reasons.push('pezzo simile');
+        break;
+      }
+    }
+
+    if (score <= 0) continue;
+
+    const key = [
+      normalize(item.shelf),
+      normalize(item.level),
+      normalize(item.drawer),
+    ].join('|');
+
+    const current = groups.get(key) || {
+      shelf: item.shelf,
+      level: item.level || '',
+      drawer: item.drawer || '',
+      score: 0,
+      count: 0,
+      reasons: new Set(),
+    };
+
+    current.score += score;
+    current.count += 1;
+    for (const reason of reasons) current.reasons.add(reason);
+    groups.set(key, current);
+  }
+
+  return [...groups.values()]
+    .sort((a, b) => b.score - a.score || b.count - a.count)
+    .slice(0, limit)
+    .map(x => ({
+      shelf: x.shelf,
+      level: x.level,
+      drawer: x.drawer,
+      score: x.score,
+      reason: [...x.reasons].slice(0, 2).join(' · '),
+    }));
+}
