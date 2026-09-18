@@ -167,23 +167,24 @@ async function renderVehicleDetail() {
       <button class="edit-pill" id="editVehicleButton">✎ Modifica</button>
     </div>
 
-    <div class="vehicle-summary-card">
-      <div class="vehicle-summary-image">${vehicleArt(vehicle, 'detail-vehicle-art')}</div>
-      <div class="vehicle-summary-copy">
-        <div class="vehicle-summary-top">
-          ${plateHtml(vehicle.plate, 'large')}
-          <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
-        </div>
-        <h2>${esc(customerName(vehicle))}</h2>
-        <p>${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${vehicle.mileageKm ? ` · ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
-        ${tel ? `<a class="vehicle-phone" href="tel:${esc(tel)}">☎ Tel. ${esc(vehicle.phone)}</a>` : ''}
-      </div>
+    <div class="vehicle-stage">
+      ${vehicleArt(vehicle, 'stage-art')}
+      <div class="stage-plate">${plateHtml(vehicle.plate, 'large')}</div>
     </div>
 
-    <div class="quick-actions premium-actions">
-      ${tel ? `<a href="tel:${esc(tel)}">☎ <span>Chiama</span></a>` : '<button disabled>☎ <span>Telefono</span></button>'}
-      <button id="addJobButton">＋ <span>Nuovo intervento</span></button>
-      <button id="addPhotoButton">▣ <span>Foto</span></button>
+    <div class="vehicle-id">
+      <div class="vehicle-id-row">
+        <h2>${esc(customerName(vehicle))}</h2>
+        <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
+      </div>
+      <p>${esc(vehicleLabel(vehicle) || 'Marca e modello non indicati')}${vehicle.mileageKm ? ` — ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
+      ${tel ? `<p class="vehicle-phone">${esc(vehicle.phone)}</p>` : ''}
+    </div>
+
+    <div class="quick-actions">
+      ${tel ? `<a href="tel:${esc(tel)}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><span>Chiama</span></a>` : '<button disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg><span>Nessun numero</span></button>'}
+      <button id="addJobButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.1L3 17.7 6.3 21l6.3-6.3a4 4 0 0 0 5.1-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg><span>Nuovo intervento</span></button>
+      <button id="addPhotoButton"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg><span>Foto</span></button>
     </div>
 
     <div class="problem-stack">
