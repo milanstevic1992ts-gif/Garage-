@@ -100,7 +100,7 @@ function vehicleCard(vehicle) {
       <img class="vehicle-thumb" src="${bikeAsset}" alt="">
       <div class="vehicle-card-main">
         <div class="vehicle-card-line">
-          <span class="plate">${esc(vehicle.plate)}</span>
+          <span class="plate">${esc(vehicle.plate || 'SENZA TARGA')}</span>
           <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
         </div>
         <h3>${esc(customerName(vehicle))}</h3>
@@ -157,7 +157,7 @@ async function renderVehicleDetail() {
       <img class="vehicle-summary-image" src="assets/vehicle-scooter.svg" alt="">
       <div class="vehicle-summary-copy">
         <div class="vehicle-summary-top">
-          <span class="plate">${esc(vehicle.plate)}</span>
+          <span class="plate">${esc(vehicle.plate || 'SENZA TARGA')}</span>
           <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
         </div>
         <h2>${esc(customerName(vehicle))}</h2>
