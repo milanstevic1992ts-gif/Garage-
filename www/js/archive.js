@@ -1,4 +1,4 @@
-import { vehicles, jobs, photos, inventory } from './db.js';
+import { vehicles, jobs, photos, inventory, stockMovements } from './db.js';
 
 const clean = value => String(value || '')
   .trim()
@@ -132,6 +132,7 @@ export async function vehicleEntries(vehicleId, includePhotos = false) {
 
 export async function inventoryEntries() {
   const items = await inventory.all();
+  const movements = await stockMovements.all();
   const text = items
     .sort((a, b) => String(a.name).localeCompare(String(b.name)))
     .map(item => {
@@ -151,6 +152,19 @@ export async function inventoryEntries() {
       ].filter(Boolean).join('\n');
     }).join('\n');
 
+  const movementText = [...movements]
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))
+    .map(m => [
+      m.createdAt ? new Date(m.createdAt).toLocaleString('it-IT') : '',
+      m.itemName || m.itemId,
+      `Tipo: ${m.type}`,
+      `Variazione: ${m.delta > 0 ? '+' : ''}${m.delta}`,
+      `Quantità dopo: ${m.quantityAfter}`,
+      [m.shelf ? `Scaffale ${m.shelf}` : '', m.level ? `Ripiano ${m.level}` : '', m.drawer ? `Cassetto ${m.drawer}` : ''].filter(Boolean).join(' · '),
+      '----------------------------------------',
+    ].filter(Boolean).join('\n'))
+    .join('\n');
+
   return [
     {
       path: '_magazzino/ricambi.json',
@@ -163,6 +177,18 @@ export async function inventoryEntries() {
       type: 'text',
       mime: 'text/plain',
       data: text || 'Nessun ricambio registrato.\n',
+    },
+    {
+      path: '_magazzino/movimenti.json',
+      type: 'text',
+      mime: 'application/json',
+      data: JSON.stringify(movements, null, 2),
+    },
+    {
+      path: '_magazzino/movimenti.txt',
+      type: 'text',
+      mime: 'text/plain',
+      data: movementText || 'Nessun movimento registrato.\n',
     },
   ];
 }
