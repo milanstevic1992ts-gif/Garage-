@@ -142,11 +142,11 @@
       <label>Anno<input name="year" inputmode="numeric" maxlength="4" placeholder="2018"></label>
       <label>Problemi dichiarati dal cliente
         <textarea name="declaredProblems" rows="3" placeholder="Cosa riferisce il cliente?"></textarea>
-        <button type="button" class="ai-action" data-order-target="declaredProblems">✦ Riordina appunti</button>
+        <button type="button" class="ai-action" data-order-target="declaredProblems">✦ Riscrivi meglio</button>
       </label>
       <label>Problemi riscontrati in officina
         <textarea name="foundProblems" rows="3" placeholder="Cosa hai riscontrato?"></textarea>
-        <button type="button" class="ai-action" data-order-target="foundProblems">✦ Riordina appunti</button>
+        <button type="button" class="ai-action" data-order-target="foundProblems">✦ Riscrivi meglio</button>
       </label>
       <div class="voice-panel" data-voice-panel>
         <div class="voice-main">
@@ -190,15 +190,15 @@
       </div>
       <label>Lavoro eseguito
         <textarea name="workDone" rows="4" required></textarea>
-        <button type="button" class="ai-action" data-order-target="workDone">✦ Riordina appunti</button>
+        <button type="button" class="ai-action" data-order-target="workDone">✦ Riscrivi meglio</button>
       </label>
       <label>Da comunicare al cliente
         <textarea name="customerNotes" rows="2"></textarea>
-        <button type="button" class="ai-action" data-order-target="customerNotes">✦ Riordina appunti</button>
+        <button type="button" class="ai-action" data-order-target="customerNotes">✦ Riscrivi meglio</button>
       </label>
       <label>Nota interna
         <textarea name="internalNotes" rows="2"></textarea>
-        <button type="button" class="ai-action" data-order-target="internalNotes">✦ Riordina appunti</button>
+        <button type="button" class="ai-action" data-order-target="internalNotes">✦ Riscrivi meglio</button>
       </label>
 
       <div class="voice-panel" data-voice-panel>
@@ -318,6 +318,11 @@
       <div class="form-error" id="placementFormError"></div>
       <button class="primary full" type="submit">Conferma posizione</button>
     </form>
+  </dialog>
+
+  <dialog id="photoViewerDialog" class="photo-viewer">
+    <button type="button" class="photo-viewer-close" data-close="photoViewerDialog" aria-label="Chiudi">×</button>
+    <img id="photoViewerImage" alt="Foto veicolo">
   </dialog>
 
   <div id="toast" class="toast"></div>
