@@ -733,7 +733,7 @@ async function startVoicePanel(panel) {
 }
 
 function wireVoicePanels() {
-  $('[data-voice-panel]').forEach(panel => {
+  $$('[data-voice-panel]').forEach(panel => {
     panel.dataset.listening = '0';
     panel.dataset.finishing = '0';
 
