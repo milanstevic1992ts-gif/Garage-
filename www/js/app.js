@@ -14,12 +14,29 @@ import {
 } from './notes-ai.js';
 import { scanShelf } from './shelf-scanner.js';
 import { startDictation, stopDictation, cancelDictation, isSpeechAvailable } from './speech.js';
+import {
+  vehicleArt, vehicleSvg, partSvg, heroSvg, guessType, colorHex,
+  VEHICLE_TYPES, VEHICLE_COLORS,
+} from './illustrations.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({
   '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;',
 })[c]);
+
+function formatPlate(plate = '') {
+  const p = String(plate || '').toUpperCase();
+  if (!p) return 'SENZA TARGA';
+  if (/^[A-Z]{2}\d{3}[A-Z]{2}$/.test(p)) return `${p.slice(0,2)} ${p.slice(2)}`;
+  if (/^[A-Z]{2}\d{5}$/.test(p)) return `${p.slice(0,2)} ${p.slice(2)}`;
+  return p;
+}
+
+function plateHtml(plate, size = '') {
+  const formatted = formatPlate(plate);
+  return `<span class="plate ${size}"><span class="plate-eu" aria-hidden="true">I</span><span class="plate-num">${esc(formatted)}</span></span>`;
+}
 
 const state = {
   view: 'home',
@@ -92,21 +109,18 @@ function directVoicePanelMarkup(entity, entityId, title, targets, compact = fals
 }
 
 function vehicleCard(vehicle) {
-  const bikeAsset = /ducati|monster|moto/i.test([vehicle.brand, vehicle.model].filter(Boolean).join(' '))
-    ? 'assets/vehicle-bike.svg'
-    : 'assets/vehicle-scooter.svg';
+  const km = vehicle.mileageKm ? `${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : '';
   return `
     <button class="vehicle-card premium-vehicle-card" data-vehicle-id="${vehicle.id}">
-      <img class="vehicle-thumb" src="${bikeAsset}" alt="">
-      <div class="vehicle-card-main">
-        <div class="vehicle-card-line">
-          <span class="plate">${esc(vehicle.plate || 'SENZA TARGA')}</span>
+      <span class="vehicle-card-art">${vehicleArt(vehicle)}</span>
+      <span class="vehicle-card-main">
+        <span class="vehicle-card-line">
+          ${plateHtml(vehicle.plate, 'small')}
           <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
-        </div>
-        <h3>${esc(customerName(vehicle))}</h3>
-        <p>${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${vehicle.mileageKm ? ` · ${Number(vehicle.mileageKm).toLocaleString('it-IT')} km` : ''}</p>
-        ${vehicle.verifiedMileageKm ? `<small class="verified-mini">✓ ${Number(vehicle.verifiedMileageKm).toLocaleString('it-IT')} km verificati</small>` : ''}
-      </div>
+        </span>
+        <strong class="vehicle-card-name">${esc(customerName(vehicle))}</strong>
+        <span class="vehicle-card-meta">${esc(vehicleLabel(vehicle) || 'Marca/modello non indicati')}${km ? ` · ${esc(km)}` : ''}</span>
+      </span>
       <span class="card-chevron">›</span>
     </button>
   `;
@@ -154,10 +168,10 @@ async function renderVehicleDetail() {
     </div>
 
     <div class="vehicle-summary-card">
-      <img class="vehicle-summary-image" src="assets/vehicle-scooter.svg" alt="">
+      <div class="vehicle-summary-image">${vehicleArt(vehicle, 'detail-vehicle-art')}</div>
       <div class="vehicle-summary-copy">
         <div class="vehicle-summary-top">
-          <span class="plate">${esc(vehicle.plate || 'SENZA TARGA')}</span>
+          ${plateHtml(vehicle.plate, 'large')}
           <span class="status ${esc(vehicle.status)}">${esc(STATUS[vehicle.status] || 'Da controllare')}</span>
         </div>
         <h2>${esc(customerName(vehicle))}</h2>
@@ -174,11 +188,11 @@ async function renderVehicleDetail() {
 
     <div class="problem-stack">
       <div class="problem-card premium-problem-card">
-        <div class="problem-title-row"><small>▤ &nbsp; PROBLEMI DICHIARATI</small><span>Modifica</span></div>
+        <div class="problem-title-row"><small>Problemi dichiarati dal cliente</small><span>Modifica</span></div>
         <p>${esc(vehicle.declaredProblems || '—')}</p>
       </div>
       <div class="problem-card premium-problem-card">
-        <div class="problem-title-row"><small>🔧 &nbsp; PROBLEMI RISCONTRATI</small><span>Modifica</span></div>
+        <div class="problem-title-row"><small>Riscontrati in officina</small><span>Modifica</span></div>
         <p>${esc(vehicle.foundProblems || '—')}</p>
         <div class="search-suggestions" id="problemSearchSuggestions"></div>
       </div>
@@ -193,7 +207,7 @@ async function renderVehicleDetail() {
     <div class="gallery" id="vehicleGallery">
       ${generalVehiclePhotos.length ? generalVehiclePhotos.map(photo => `
         <img data-photo-id="${photo.id}" alt="${esc(photo.phase || 'foto')}" src="${URL.createObjectURL(photo.blob)}">
-      `).join('') : '<div class="info-card"><p>Nessuna foto ancora.</p></div>'}
+      `).join('') : '<div class="info-card gallery-empty"><p>Nessuna foto. Tocca «Foto» per scattare la prima.</p></div>'}
     </div>
 
     <div class="section-title"><strong>Interventi</strong><span>${vehicleJobs.length}</span></div>
@@ -232,7 +246,7 @@ async function renderVehicleDetail() {
     $('#photoDialog').showModal();
   };
 
-  $('[data-edit-job-id]').forEach(button => {
+  $$('[data-edit-job-id]').forEach(button => {
     button.onclick = async event => {
       event.stopPropagation();
       const job = await jobs.get(button.dataset.editJobId);
@@ -284,8 +298,42 @@ function openVehicleForm(vehicle = null) {
   form.elements.declaredProblems.value = vehicle?.declaredProblems || '';
   form.elements.foundProblems.value = vehicle?.foundProblems || '';
   form.elements.status.value = vehicle?.status || 'da_controllare';
+  form.elements.vehicleType.value = vehicle ? guessType(vehicle) : 'scooter';
+  form.elements.color.value = vehicle?.color || '';
+  renderVehiclePickers();
 
   $('#vehicleDialog').showModal();
+}
+
+function renderVehiclePickers() {
+  const form = $('#vehicleForm');
+  const type = form.elements.vehicleType.value || 'scooter';
+  const color = form.elements.color.value || '';
+  const hex = colorHex({ color });
+
+  $('#vehicleFormPreview').innerHTML = vehicleSvg(type, hex, 'preview-art');
+  $('#vehicleTypePicker').innerHTML = Object.entries(VEHICLE_TYPES).map(([key, label]) => `
+    <button type="button" role="radio" aria-checked="${key === type}" class="${key === type ? 'active' : ''}" data-type="${key}">
+      ${vehicleSvg(key, key === type ? hex : '#5d6770', 'type-icon')}<span>${label}</span>
+    </button>`).join('');
+
+  $('#vehicleColorPicker').innerHTML = Object.entries(VEHICLE_COLORS).map(([key, entry]) => `
+    <button type="button" role="radio" aria-checked="${key === color}" aria-label="${entry.label}" title="${entry.label}"
+      class="swatch ${key === color ? 'active' : ''}" style="--swatch:${entry.hex}" data-color="${key}"></button>`).join('');
+
+  $('#vehicleTypePicker [data-type]').forEach(button => {
+    button.onclick = () => {
+      form.elements.vehicleType.value = button.dataset.type;
+      renderVehiclePickers();
+    };
+  });
+
+  $('#vehicleColorPicker [data-color]').forEach(button => {
+    button.onclick = () => {
+      form.elements.color.value = form.elements.color.value === button.dataset.color ? '' : button.dataset.color;
+      renderVehiclePickers();
+    };
+  });
 }
 
 async function saveVehicle(event) {
@@ -321,6 +369,8 @@ async function saveVehicle(event) {
       brand: String(data.brand || '').trim(),
       model: String(data.model || '').trim(),
       year: String(data.year || '').replace(/\D/g,'').slice(0,4),
+      vehicleType: VEHICLE_TYPES[data.vehicleType] ? data.vehicleType : 'scooter',
+      color: VEHICLE_COLORS[data.color] ? data.color : '',
       mileageKm: String(data.mileageKm || '').replace(/\D/g,''),
       declaredProblems: String(data.declaredProblems || '').trim(),
       foundProblems: String(data.foundProblems || '').trim(),
@@ -563,20 +613,22 @@ function renderInventory() {
     const resultMeta = $('#inventoryResultMeta');
     if (resultMeta) resultMeta.textContent = list.length === 1 ? '1 risultato' : `${list.length} risultati`;
     $('#inventoryAiHint').textContent = q
-      ? (hint ? `Mini AI · ${hint}` : 'Mini AI · ricerca intelligente attiva')
-      : 'Mini AI · prova “carb Betwin verde scaffale C ripiano 2”';
+      ? (hint || 'Ricerca intelligente: tollera errori e abbreviazioni')
+      : 'Prova “carb Betwin verde scaffale C ripiano 2”';
 
     $('#inventoryResults').innerHTML = list.length ? list.map(item => {
       const withdrawn = Number(item.quantity || 0) <= 0;
       return `
       <article class="inventory-card premium-inventory-card ${withdrawn ? 'withdrawn' : ''}">
         <div class="inventory-product">
-          <img class="part-thumb" data-inventory-photo="${item.photoBlob ? '1' : '0'}" data-item-id="${item.id}" src="${item.photoBlob ? URL.createObjectURL(item.photoBlob) : 'assets/part-carb.svg'}" alt="${esc(item.name)}">
+          ${item.photoBlob
+            ? `<img class="part-thumb" data-inventory-photo="1" data-item-id="${item.id}" src="${URL.createObjectURL(item.photoBlob)}" alt="${esc(item.name)}">`
+            : `<div class="part-thumb part-thumb-art" data-inventory-photo="0">${partSvg(item)}</div>`}
           <div class="inventory-product-copy">
             <h3>${esc(item.name)}</h3>
             <p class="muted">${esc([item.category,item.brand,item.partNumber].filter(Boolean).join(' · '))}</p>
             ${item.compatibleWith ? `<p class="compatibility">Compatibile: ${esc(item.compatibleWith)}</p>` : ''}
-            <div class="location">⌖ &nbsp; ${withdrawn ? 'PRELEVATO · ultima posizione: ' : ''}${esc(inventoryLocation(item))}</div>
+            <div class="location">${withdrawn ? 'Prelevato — ultima posizione: ' : ''}${esc(inventoryLocation(item))}</div>
             <div class="inventory-state-row">
               <span class="condition ${esc(item.condition || 'buono')}">${esc((item.condition || 'buono')[0].toUpperCase() + (item.condition || 'buono').slice(1))}</span>
               <span>${withdrawn ? 'Non disponibile' : `${item.quantity ?? 0} pz disponibile${Number(item.quantity||0) === 1 ? '' : 'i'}`}</span>
@@ -584,8 +636,8 @@ function renderInventory() {
           </div>
         </div>
         <div class="inventory-actions">
-          ${withdrawn ? '' : `<button class="withdraw-btn" data-withdraw-id="${item.id}">▣ &nbsp; PRELEVA 1</button>`}
-          <button class="putaway-btn" data-putaway-id="${item.id}">⇄ &nbsp; ${withdrawn ? 'RIPONI' : (item.shelf ? 'SPOSTA' : 'METTI SU SCAFFALE')}</button>
+          ${withdrawn ? '' : `<button class="withdraw-btn" data-withdraw-id="${item.id}">Preleva 1</button>`}
+          <button class="putaway-btn" data-putaway-id="${item.id}">${withdrawn ? 'Riponi' : (item.shelf ? 'Sposta' : 'Metti su scaffale')}</button>
         </div>
         ${directVoicePanelMarkup('inventory', item.id, 'Detta note ricambio', [
           { field:'notes', label:'Note' },
@@ -593,7 +645,7 @@ function renderInventory() {
       </article>`;
     }).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
 
-    $('.part-thumb[data-inventory-photo="1"]').forEach(img => {
+    $$('.part-thumb[data-inventory-photo="1"]').forEach(img => {
       img.onclick = () => {
         const dialog = $('#photoViewerDialog');
         const viewer = $('#photoViewerImage');
@@ -603,10 +655,10 @@ function renderInventory() {
       };
     });
 
-    $('[data-withdraw-id]').forEach(button => {
+    $$('[data-withdraw-id]').forEach(button => {
       button.onclick = () => withdrawInventoryItem(button.dataset.withdrawId);
     });
-    $('[data-putaway-id]').forEach(button => {
+    $$('[data-putaway-id]').forEach(button => {
       button.onclick = async () => {
         const item = await inventory.get(button.dataset.putawayId);
         openPlacement(item, Number(item.quantity || 0) <= 0 ? 'restock' : 'relocate');
@@ -1130,7 +1182,6 @@ function wireUi() {
   $('#chooseLocalButton').onclick = () => chooseBackup('local');
   $('#chooseDriveButton').onclick = () => chooseBackup('drive');
   $('#syncAllButton').onclick = syncAll;
-  $('#backupShortcut').onclick = () => showView('backup');
 
   $$('.bottom-nav button').forEach(button => {
     button.onclick = () => showView(button.dataset.view);
@@ -1160,6 +1211,8 @@ function wireUi() {
 }
 
 async function start() {
+  const hero = $('#garageHeroArt');
+  if (hero) hero.innerHTML = heroSvg();
   wireUi();
   await refreshVehicles();
   renderVehicleList();
