@@ -167,7 +167,7 @@ async function renderVehicleDetail() {
 
     <div class="quick-actions premium-actions">
       ${tel ? `<a href="tel:${esc(tel)}">☎ <span>Chiama</span></a>` : '<button disabled>☎ <span>Telefono</span></button>'}
-      <button id="addJobButton">🔧 <span>Intervento</span></button>
+      <button id="addJobButton">＋ <span>Nuovo intervento</span></button>
       <button id="addPhotoButton">▣ <span>Foto</span></button>
     </div>
 
@@ -201,7 +201,10 @@ async function renderVehicleDetail() {
         <article class="job-card">
           <div class="card-top">
             <strong>${esc(job.date)}</strong>
-            <small>${job.mileageKm ? esc(job.mileageKm) + ' km' : ''}</small>
+            <div class="job-card-tools">
+              <small>${job.mileageKm ? esc(job.mileageKm) + ' km' : ''}</small>
+              <button type="button" class="job-edit-button" data-edit-job-id="${job.id}">✎ Modifica</button>
+            </div>
           </div>
           <p style="margin:9px 0 0">${esc(job.workDone)}</p>
           ${job.customerNotes ? `<p class="muted">${esc(job.customerNotes)}</p>` : ''}
@@ -222,11 +225,19 @@ async function renderVehicleDetail() {
 
   $('#backHome').onclick = () => showView('home');
   $('#editVehicleButton').onclick = () => openVehicleForm(vehicle);
-  $('#addJobButton').onclick = () => openJobForm(vehicle);
+  $('#addJobButton').onclick = () => openJobForm(vehicle, null);
   $('#addPhotoButton').onclick = () => {
     state.photoVehicleId = vehicle.id;
     $('#photoDialog').showModal();
   };
+
+  $('[data-edit-job-id]').forEach(button => {
+    button.onclick = async event => {
+      event.stopPropagation();
+      const job = await jobs.get(button.dataset.editJobId);
+      if (job) await openJobForm(vehicle, job);
+    };
+  });
 
   $('#vehicleGallery img[data-photo-id], .job-photo-thumb[data-job-photo="1"]').forEach(img => {
     img.onclick = () => {
@@ -280,48 +291,57 @@ async function saveVehicle(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const data = Object.fromEntries(new FormData(form));
-  const normalizedPlate = normalizePlate(data.plate);
+  const normalizedPlate = normalizePlate(data.plate || '');
+  const firstName = String(data.firstName || '').trim();
   const error = $('#vehicleFormError');
   error.textContent = '';
 
-  if (!normalizedPlate || !data.firstName.trim()) {
-    error.textContent = 'Inserisci almeno targa e nome.';
+  if (!firstName) {
+    error.textContent = 'Inserisci almeno il nome del cliente.';
     return;
   }
 
-  const duplicate = await vehicles.getByPlate(normalizedPlate);
-  if (duplicate && duplicate.id !== data.id) {
-    error.textContent = 'Questa targa è già presente.';
-    return;
+  try {
+    if (normalizedPlate) {
+      const duplicate = await vehicles.getByPlate(normalizedPlate);
+      if (duplicate && duplicate.id !== data.id) {
+        error.textContent = 'Questa targa è già presente.';
+        return;
+      }
+    }
+
+    const previous = data.id ? await vehicles.get(data.id) : null;
+    const record = {
+      id: data.id || uuid(),
+      plate: normalizedPlate,
+      firstName,
+      lastName: String(data.lastName || '').trim(),
+      phone: String(data.phone || '').trim(),
+      brand: String(data.brand || '').trim(),
+      model: String(data.model || '').trim(),
+      year: String(data.year || '').replace(/\D/g,'').slice(0,4),
+      mileageKm: String(data.mileageKm || '').replace(/\D/g,''),
+      declaredProblems: String(data.declaredProblems || '').trim(),
+      foundProblems: String(data.foundProblems || '').trim(),
+      status: data.status || 'da_controllare',
+      createdAt: previous?.createdAt || nowIso(),
+      updatedAt: nowIso(),
+      ...(normalizedPlate ? { normalizedPlate } : {}),
+    };
+
+    await vehicles.save(record);
+    await refreshVehicles();
+    renderVehicleList();
+    backup.scheduleVehicle(record.id);
+
+    $('#vehicleDialog').close();
+    toast(previous ? 'Cliente aggiornato' : 'Nuovo cliente salvato');
+    await openVehicle(record.id);
+  } catch (saveError) {
+    console.error(saveError);
+    error.textContent = 'Non riesco a salvare il cliente. Riprova.';
+    toast('Errore durante il salvataggio');
   }
-
-  const previous = data.id ? await vehicles.get(data.id) : null;
-  const record = {
-    id: data.id || uuid(),
-    plate: normalizedPlate,
-    normalizedPlate,
-    firstName: data.firstName.trim(),
-    lastName: data.lastName.trim(),
-    phone: data.phone.trim(),
-    brand: data.brand.trim(),
-    model: data.model.trim(),
-    year: String(data.year || '').replace(/\D/g,'').slice(0,4),
-    mileageKm: String(data.mileageKm || '').replace(/\D/g,''),
-    declaredProblems: data.declaredProblems.trim(),
-    foundProblems: data.foundProblems.trim(),
-    status: data.status,
-    createdAt: previous?.createdAt || nowIso(),
-    updatedAt: nowIso(),
-  };
-
-  await vehicles.save(record);
-  await refreshVehicles();
-  renderVehicleList();
-  backup.scheduleVehicle(record.id);
-
-  $('#vehicleDialog').close();
-  toast(previous ? 'Scheda aggiornata' : 'Ingresso salvato');
-  await openVehicle(record.id);
 }
 
 function renderPendingJobPhotos() {
@@ -351,75 +371,129 @@ function renderPendingJobPhotos() {
   });
 }
 
-function openJobForm(vehicle) {
+async function openJobForm(vehicle, job = null) {
   const form = $('#jobForm');
   form.reset();
+
+  form.elements.id.value = job?.id || '';
   form.elements.vehicleId.value = vehicle.id;
-  form.elements.date.value = new Date().toISOString().slice(0,10);
-  form.elements.mileageKm.value = vehicle.mileageKm || '';
+  form.elements.date.value = job?.date || new Date().toISOString().slice(0,10);
+  form.elements.mileageKm.value = job?.mileageKm || vehicle.mileageKm || '';
+  form.elements.workDone.value = job?.workDone || '';
+  form.elements.customerNotes.value = job?.customerNotes || '';
+  form.elements.internalNotes.value = job?.internalNotes || '';
+
+  $('#jobFormTitle').textContent = job ? 'Modifica intervento' : 'Nuovo intervento';
+  $('#jobSubmitButton').textContent = job ? 'Salva modifiche' : 'Salva nuovo intervento';
   $('#jobFormError').textContent = '';
+
   state.pendingJobPhotos = [];
   state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
   state.pendingJobPhotoUrls = [];
   $('#jobPhotoInput').value = '';
-  renderPendingJobPhotos();
+
+  const preview = $('#jobPhotoPreview');
+  if (job) {
+    const existing = (await photos.byVehicle(vehicle.id)).filter(photo => photo.jobId === job.id);
+    preview.innerHTML = existing.length
+      ? existing.map((photo,index) =>
+          `<button type="button" class="job-photo-existing" data-existing-job-photo="${index}">
+             <img src="${URL.createObjectURL(photo.blob)}" alt="Foto intervento ${index + 1}">
+           </button>`
+        ).join('')
+      : '<span class="job-photo-empty">Nessuna foto già salvata</span>';
+
+    preview.querySelectorAll('[data-existing-job-photo]').forEach(button => {
+      button.onclick = () => {
+        const img = button.querySelector('img');
+        $('#photoViewerImage').src = img.src;
+        $('#photoViewerImage').alt = img.alt;
+        $('#photoViewerDialog').showModal();
+      };
+    });
+  } else {
+    renderPendingJobPhotos();
+  }
+
   $('#jobDialog').showModal();
 }
 
 async function saveJob(event) {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(event.currentTarget));
-  if (!data.workDone.trim()) {
-    $('#jobFormError').textContent = 'Scrivi il lavoro eseguito.';
+  const error = $('#jobFormError');
+  error.textContent = '';
+
+  if (!String(data.workDone || '').trim()) {
+    error.textContent = 'Scrivi il lavoro eseguito.';
     return;
   }
 
   const vehicle = await vehicles.get(data.vehicleId);
-  if (!vehicle) return;
+  if (!vehicle) {
+    error.textContent = 'Veicolo non trovato.';
+    return;
+  }
 
-  const record = {
-    id: uuid(),
-    vehicleId: vehicle.id,
-    date: data.date,
-    mileageKm: String(data.mileageKm || '').replace(/\D/g,''),
-    workDone: data.workDone.trim(),
-    customerNotes: data.customerNotes.trim(),
-    internalNotes: data.internalNotes.trim(),
-    createdAt: nowIso(),
-    updatedAt: nowIso(),
-  };
-
-  await jobs.save(record);
-
-  for (const blob of state.pendingJobPhotos) {
-    const photo = {
-      id: uuid(),
+  try {
+    const previous = data.id ? await jobs.get(data.id) : null;
+    const record = {
+      id: data.id || uuid(),
       vehicleId: vehicle.id,
-      jobId: record.id,
-      phase: 'intervento',
-      createdAt: nowIso(),
-      blob,
-      backupLocal: false,
-      backupDrive: false,
+      date: data.date,
+      mileageKm: String(data.mileageKm || '').replace(/\D/g,''),
+      workDone: String(data.workDone || '').trim(),
+      customerNotes: String(data.customerNotes || '').trim(),
+      internalNotes: String(data.internalNotes || '').trim(),
+      createdAt: previous?.createdAt || nowIso(),
+      updatedAt: nowIso(),
     };
-    await photos.save(photo);
-    backup.syncPhoto(photo).catch(() => {});
-  }
 
-  state.pendingJobPhotos = [];
-  state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
-  state.pendingJobPhotoUrls = [];
-  if (record.mileageKm) {
-    vehicle.mileageKm = record.mileageKm;
-    vehicle.updatedAt = nowIso();
-    await vehicles.save(vehicle);
-  }
+    await jobs.save(record);
 
-  backup.scheduleVehicle(vehicle.id, 200);
-  $('#jobDialog').close();
-  toast('Intervento registrato');
-  await refreshVehicles();
-  await renderVehicleDetail();
+    for (const blob of state.pendingJobPhotos) {
+      const photo = {
+        id: uuid(),
+        vehicleId: vehicle.id,
+        jobId: record.id,
+        phase: 'intervento',
+        createdAt: nowIso(),
+        blob,
+        backupLocal: false,
+        backupDrive: false,
+      };
+      await photos.save(photo);
+      backup.syncPhoto(photo).catch(() => {});
+    }
+
+    state.pendingJobPhotos = [];
+    state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
+    state.pendingJobPhotoUrls = [];
+
+    if (record.mileageKm) {
+      const allVehicleJobs = await jobs.byVehicle(vehicle.id);
+      const newestDate = allVehicleJobs
+        .filter(item => item.id !== record.id)
+        .map(item => String(item.date || ''))
+        .sort()
+        .at(-1) || '';
+      if (!newestDate || String(record.date || '') >= newestDate) {
+        vehicle.mileageKm = record.mileageKm;
+        vehicle.updatedAt = nowIso();
+        await vehicles.save(vehicle);
+      }
+    }
+
+    backup.scheduleVehicle(vehicle.id, 200);
+    $('#jobDialog').close();
+    toast(previous ? 'Intervento aggiornato' : 'Nuovo intervento registrato');
+    await refreshVehicles();
+    await renderVehicleDetail();
+  } catch (saveError) {
+    console.error(saveError);
+    error.textContent = 'Non riesco a salvare l’intervento. Riprova.';
+    toast('Errore durante il salvataggio');
+  }
 }
 
 async function compressImage(file) {
