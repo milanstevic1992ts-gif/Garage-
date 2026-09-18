@@ -1,11 +1,16 @@
 import {
-  vehicles, jobs, photos, inventory, meta,
+  vehicles, jobs, photos, inventory, stockMovements, meta,
   uuid, nowIso, normalizePlate,
 } from './db.js';
 import { customerName, vehicleLabel } from './archive.js';
 import * as backup from './backup.js';
 import * as destinations from './destinations.js';
-import { smartInventorySearch, smartVehicleSearch, inventoryQueryHint } from './search-ai.js';
+import {
+  smartInventorySearch, smartVehicleSearch, inventoryQueryHint,
+  suggestInventoryLocations,
+} from './search-ai.js';
+import { orderRoughNotes, suggestInventoryTerms } from './notes-ai.js';
+import { scanShelf } from './shelf-scanner.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -19,6 +24,7 @@ const state = {
   inventory: [],
   activeVehicleId: null,
   photoVehicleId: null,
+  placementMode: 'relocate',
 };
 
 const STATUS = {
@@ -130,6 +136,7 @@ async function renderVehicleDetail() {
       <div class="problem-card">
         <small>PROBLEMI RISCONTRATI</small>
         <p>${esc(vehicle.foundProblems || '—')}</p>
+        <div class="search-suggestions" id="problemSearchSuggestions"></div>
       </div>
     </div>
 
@@ -162,6 +169,20 @@ async function renderVehicleDetail() {
     state.photoVehicleId = vehicle.id;
     $('#photoDialog').showModal();
   };
+
+  const terms = suggestInventoryTerms(
+    [vehicle.declaredProblems, vehicle.foundProblems].filter(Boolean).join(' ')
+  );
+  const suggestionBox = $('#problemSearchSuggestions');
+  suggestionBox.innerHTML = terms.map(term =>
+    `<button type="button" data-search-part="${esc(term)}">${esc(term)}</button>`
+  ).join('');
+  suggestionBox.querySelectorAll('[data-search-part]').forEach(button => {
+    button.onclick = () => {
+      $('#inventorySearch').value = button.dataset.searchPart;
+      showView('inventory');
+    };
+  });
 }
 
 function openVehicleForm(vehicle = null) {
