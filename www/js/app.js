@@ -34,9 +34,9 @@ const state = {
 const STATUS = {
   da_controllare: 'Da controllare',
   in_lavorazione: 'In lavorazione',
-  attesa_ricambi: 'Attesa ricambi',
+  attesa_ricambi: 'In attesa',
   pronto: 'Pronto',
-  consegnato: 'Consegnato',
+  consegnato: 'Completato',
 };
 
 function toast(message) {
