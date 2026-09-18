@@ -63,3 +63,15 @@ h1{font-size:28px;margin-bottom:0} h2{font-size:26px;margin-bottom:5px} h3{font-
 .toast{position:fixed;left:50%;bottom:95px;transform:translate(-50%,20px);background:#f3f6f8;color:#111;padding:11px 14px;border-radius:12px;opacity:0;pointer-events:none;transition:.2s;z-index:30;font-weight:800}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 @media(max-width:620px){.hero-card{align-items:flex-start;flex-direction:column}.hero-card .primary{width:100%}.problem-grid{grid-template-columns:1fr}.gallery{grid-template-columns:repeat(2,1fr)}.grid2,.grid3{grid-template-columns:1fr 1fr}.topbar{padding-top:calc(14px + env(safe-area-inset-top))}}
+
+.ai-hint{
+  margin:-4px 4px 12px;
+  color:var(--muted);
+  font-size:11px;
+  font-weight:750;
+}
+.ai-hint::before{
+  content:"✦";
+  color:var(--accent);
+  margin-right:6px;
+}
