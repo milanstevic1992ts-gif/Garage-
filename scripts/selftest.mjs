@@ -64,12 +64,23 @@ assert(suggestions[0]?.shelf === 'C', 'Suggerimento scaffale fallito');
 const ordered = orderRoughNotes('non parte a freddo; scintilla debole controllare bobina');
 assert(ordered.includes('Non si avvia a freddo.'), 'Riordino appunti fallito');
 
-const rewritten = rewriteWorkshopNotes('cliente dice che non parte bene, fa rumore, perde olio', 'declaredProblems');
+const rewritten = rewriteWorkshopNotes('cliente dice che non parte bene, praticamente fa rumore, perde olio', 'declaredProblems');
 assert(
   rewritten.includes('difficoltà di avviamento') &&
   rewritten.includes('rumore anomalo') &&
   rewritten.includes("perdita d'olio"),
   'Riscrittura professionale appunti fallita',
+);
+
+const workRewrite = rewriteWorkshopNotes(
+  'abbiamo cambiato candela, pulito carburatore, fatto regolazione minimo',
+  'workDone',
+);
+assert(
+  workRewrite.includes('Sostituito candela') &&
+  workRewrite.includes('Pulito carburatore') &&
+  workRewrite.includes('Eseguito regolazione minimo'),
+  'Riscrittura lavoro eseguito fallita',
 );
 
 const terms = suggestInventoryTerms('non parte a freddo e scintilla debole');
