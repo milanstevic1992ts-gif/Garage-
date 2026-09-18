@@ -84,6 +84,7 @@ export const vehicles = {
   all: () => run('vehicles', 'readonly', s => s.getAll()),
   get: id => run('vehicles', 'readonly', s => s.get(id)),
   getByPlate: async normalizedPlate => {
+    if (!normalizedPlate) return null;
     const db = await openDb();
     return new Promise((resolve, reject) => {
       const tx = db.transaction('vehicles', 'readonly');
