@@ -11,42 +11,54 @@
 <body>
   <div class="app-shell">
     <header class="topbar">
-      <div>
-        <div class="eyebrow">OFFICINA · SCOOTER · MOTO</div>
-        <h1>Garage</h1>
-      </div>
-      <button class="icon-btn" id="backupShortcut" aria-label="Backup">☁</button>
+      <button class="icon-btn top-backup" id="backupShortcut" aria-label="Backup">☁</button>
     </header>
 
     <main id="main">
-      <section id="homeView" class="view">
-        <div class="hero-card">
-          <div>
-            <div class="eyebrow">RICERCA RAPIDA</div>
-            <h2>Chi stai cercando?</h2>
-            <p>Targa, nome cliente o telefono.</p>
+      <section id="homeView" class="view home-view">
+        <div class="garage-hero">
+          <div class="garage-hero-shade"></div>
+          <div class="garage-brand">
+            <div class="eyebrow">OFFICINA · SCOOTER · MOTO</div>
+            <h1>Garage</h1>
+            <p>Passione in movimento.</p>
           </div>
-          <button class="primary" id="newVehicleButton">+ Nuovo ingresso</button>
         </div>
 
-        <div class="search-box">
-          <span>⌕</span>
-          <input id="vehicleSearch" type="search" autocomplete="off"
-                 placeholder="Es. AB123CD, Mario Rossi, 347...">
-          <button id="clearVehicleSearch" aria-label="Cancella">×</button>
+        <div class="home-search-card">
+          <div class="home-search-title">
+            <div class="big-search-icon">⌕</div>
+            <div>
+              <h2>Chi stai cercando?</h2>
+              <p>Targa, nome cliente o telefono.</p>
+            </div>
+          </div>
+          <div class="search-box home-search-box">
+            <span>⌕</span>
+            <input id="vehicleSearch" type="search" autocomplete="off"
+                   placeholder="Es. AB123CD, Mario Rossi, 347...">
+            <button id="clearVehicleSearch" aria-label="Cancella">×</button>
+          </div>
+          <button class="primary home-new-button" id="newVehicleButton">＋ Nuovo ingresso</button>
         </div>
-        <div id="vehicleResults" class="stack"></div>
+
+        <div class="list-heading">
+          <h3>Ultimi veicoli</h3>
+          <span>Vedi tutti ›</span>
+        </div>
+        <div id="vehicleResults" class="stack vehicle-stack"></div>
       </section>
 
       <section id="vehicleView" class="view hidden"></section>
 
-      <section id="inventoryView" class="view hidden">
-        <div class="section-head">
+      <section id="inventoryView" class="view hidden inventory-view">
+        <div class="inventory-hero-head">
           <div>
             <div class="eyebrow">MAGAZZINO RICAMBI</div>
             <h2>Dove si trova?</h2>
+            <p>Trova subito il ricambio giusto.</p>
           </div>
-          <button class="primary small" id="newInventoryButton">+ Ricambio</button>
+          <button class="inventory-add-icon" id="newInventoryButton" aria-label="Nuovo ricambio">▦</button>
         </div>
         <div class="search-box">
           <span>⌕</span>
@@ -54,11 +66,12 @@
                  placeholder="Es. carburatore Betwin">
           <button id="clearInventorySearch" aria-label="Cancella">×</button>
         </div>
-        <div class="inventory-tools">
-          <div id="inventoryAiHint" class="ai-hint">Mini AI · prova “carb Betwin verde scaffale C ripiano 2”</div>
+        <div id="inventoryAiHint" class="ai-hint">Mini AI · prova “carb Betwin verde scaffale C ripiano 2”</div>
+        <div class="inventory-meta-row">
+          <span id="inventoryResultMeta">0 risultati</span>
           <label class="show-withdrawn"><input type="checkbox" id="showWithdrawn"> Mostra prelevati</label>
         </div>
-        <div id="inventoryResults" class="stack"></div>
+        <div id="inventoryResults" class="stack inventory-stack"></div>
       </section>
 
       <section id="backupView" class="view hidden">
