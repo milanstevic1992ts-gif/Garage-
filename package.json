@@ -7,7 +7,8 @@
     "serve": "npx --yes http-server www -p 8080 -c-1",
     "android:add": "npx cap add android",
     "android:sync": "npx cap sync android && bash scripts/patch-android.sh",
-    "apk": "npx cap sync android && bash scripts/patch-android.sh && cd android && ./gradlew assembleDebug"
+    "apk": "npx cap sync android && bash scripts/patch-android.sh && cd android && ./gradlew assembleDebug",
+    "check": "node scripts/selftest.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
