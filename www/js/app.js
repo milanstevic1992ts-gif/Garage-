@@ -33,6 +33,7 @@ const state = {
   pendingInventoryPhotoUrl: '',
   pendingJobPhotos: [],
   pendingJobPhotoUrls: [],
+  existingJobPhotoUrls: [],
 };
 
 const STATUS = {
@@ -348,17 +349,31 @@ function renderPendingJobPhotos() {
   const preview = $('#jobPhotoPreview');
   if (!preview) return;
 
-  if (!state.pendingJobPhotoUrls.length) {
-    preview.innerHTML = '<span class="job-photo-empty">Nessuna foto aggiunta</span>';
-    return;
-  }
+  const existingMarkup = state.existingJobPhotoUrls.map((url,index) =>
+    `<button type="button" class="job-photo-existing" data-existing-job-photo="${index}" aria-label="Apri foto già salvata ${index + 1}">
+       <img src="${url}" alt="Foto intervento già salvata ${index + 1}">
+       <small>Salvata</small>
+     </button>`
+  ).join('');
 
-  preview.innerHTML = state.pendingJobPhotoUrls.map((url,index) =>
-    `<button type="button" class="job-photo-draft" data-remove-job-photo="${index}" aria-label="Rimuovi foto ${index + 1}">
-       <img src="${url}" alt="Anteprima intervento ${index + 1}">
+  const pendingMarkup = state.pendingJobPhotoUrls.map((url,index) =>
+    `<button type="button" class="job-photo-draft" data-remove-job-photo="${index}" aria-label="Rimuovi nuova foto ${index + 1}">
+       <img src="${url}" alt="Nuova foto intervento ${index + 1}">
        <span>×</span>
      </button>`
   ).join('');
+
+  preview.innerHTML = existingMarkup + pendingMarkup
+    || '<span class="job-photo-empty">Nessuna foto aggiunta</span>';
+
+  preview.querySelectorAll('[data-existing-job-photo]').forEach(button => {
+    button.onclick = () => {
+      const img = button.querySelector('img');
+      $('#photoViewerImage').src = img.src;
+      $('#photoViewerImage').alt = img.alt;
+      $('#photoViewerDialog').showModal();
+    };
+  });
 
   preview.querySelectorAll('[data-remove-job-photo]').forEach(button => {
     button.onclick = () => {
@@ -390,30 +405,15 @@ async function openJobForm(vehicle, job = null) {
   state.pendingJobPhotos = [];
   state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
   state.pendingJobPhotoUrls = [];
+  state.existingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
+  state.existingJobPhotoUrls = [];
   $('#jobPhotoInput').value = '';
 
-  const preview = $('#jobPhotoPreview');
   if (job) {
     const existing = (await photos.byVehicle(vehicle.id)).filter(photo => photo.jobId === job.id);
-    preview.innerHTML = existing.length
-      ? existing.map((photo,index) =>
-          `<button type="button" class="job-photo-existing" data-existing-job-photo="${index}">
-             <img src="${URL.createObjectURL(photo.blob)}" alt="Foto intervento ${index + 1}">
-           </button>`
-        ).join('')
-      : '<span class="job-photo-empty">Nessuna foto già salvata</span>';
-
-    preview.querySelectorAll('[data-existing-job-photo]').forEach(button => {
-      button.onclick = () => {
-        const img = button.querySelector('img');
-        $('#photoViewerImage').src = img.src;
-        $('#photoViewerImage').alt = img.alt;
-        $('#photoViewerDialog').showModal();
-      };
-    });
-  } else {
-    renderPendingJobPhotos();
+    state.existingJobPhotoUrls = existing.map(photo => URL.createObjectURL(photo.blob));
   }
+  renderPendingJobPhotos();
 
   $('#jobDialog').showModal();
 }
@@ -469,6 +469,8 @@ async function saveJob(event) {
     state.pendingJobPhotos = [];
     state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
     state.pendingJobPhotoUrls = [];
+    state.existingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
+    state.existingJobPhotoUrls = [];
 
     if (record.mileageKm) {
       const allVehicleJobs = await jobs.byVehicle(vehicle.id);
