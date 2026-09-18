@@ -911,3 +911,176 @@ h1,h2,h3{letter-spacing:-.03em}
   }
   .bottom-nav{border-radius:0 0 28px 28px}
 }
+
+/* VEHICLE VERIFICATION */
+.verify-plate-button{
+  width:100%;
+  margin:-3px 0 12px;
+  min-height:42px;
+  border:1px solid #2b6540;
+  border-radius:10px;
+  color:#7be39f;
+  background:rgba(56,199,106,.08);
+  font-size:11px;
+  font-weight:950;
+}
+.verified-mileage-card{
+  margin:10px 0;
+  padding:14px;
+  border:1px solid var(--line);
+  border-radius:14px;
+  background:linear-gradient(145deg,#151e27,#0f161e);
+}
+.verified-mileage-card.verified{
+  border-color:#285b3a;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(56,199,106,.1),transparent 42%),
+    linear-gradient(145deg,#142019,#0e1712);
+}
+.verified-mileage-head{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+}
+.verified-mileage-head small{
+  display:block;
+  margin-bottom:5px;
+  color:#71dc95;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.05em;
+}
+.verified-mileage-card.empty .verified-mileage-head small{color:#9ba8b3}
+.verified-mileage-head strong{
+  display:block;
+  font-size:25px;
+  line-height:1;
+  letter-spacing:-.035em;
+}
+.verification-action{
+  flex:0 0 auto;
+  border:1px solid #38674a;
+  border-radius:10px;
+  padding:8px 11px;
+  color:#86e5a7;
+  background:rgba(56,199,106,.07);
+  font-size:10px;
+  font-weight:900;
+}
+.verified-mileage-card.empty .verification-action{
+  border-color:#4d3a2e;
+  color:#ff9b59;
+  background:rgba(255,106,24,.07);
+}
+.verified-mileage-card>p{
+  margin:10px 0 0;
+  color:#9ba8b3;
+  font-size:11px;
+}
+.verification-meta{
+  display:grid;
+  grid-template-columns:auto 1fr;
+  gap:5px 10px;
+  margin-top:12px;
+  padding-top:10px;
+  border-top:1px solid rgba(255,255,255,.07);
+  font-size:10px;
+}
+.verification-meta span{color:#7f8e99}
+.verification-meta b{color:#dfe6eb;font-weight:850}
+.mileage-comparison{
+  margin-top:10px;
+  padding:9px 10px;
+  border-radius:9px;
+  background:#111923;
+  color:#aeb9c2;
+  font-size:10px;
+  font-weight:850;
+}
+.mileage-comparison.ok{
+  color:#78dfa0;
+  background:rgba(56,199,106,.08);
+  border:1px solid rgba(56,199,106,.22);
+}
+.mileage-comparison.warning{
+  color:#ff9994;
+  background:rgba(239,83,80,.09);
+  border:1px solid rgba(239,83,80,.24);
+}
+.verification-plate-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  margin-bottom:12px;
+  padding:12px 13px;
+  border:1px solid var(--line);
+  border-radius:11px;
+  background:#111922;
+}
+.verification-plate-row span{
+  color:#8d9aa6;
+  font-size:10px;
+  font-weight:900;
+}
+.verification-plate-row strong{
+  padding:4px 8px;
+  border:2px solid #d3dae0;
+  border-radius:4px;
+  background:#f8fafb;
+  color:#111;
+  font-size:16px;
+  letter-spacing:.05em;
+}
+.verification-source-actions{
+  display:grid;
+  gap:8px;
+  margin-bottom:12px;
+}
+.official-source-button{
+  width:100%;
+  display:grid;
+  grid-template-columns:38px 1fr auto;
+  gap:10px;
+  align-items:center;
+  padding:11px;
+  border:1px solid #2e3c47;
+  border-radius:12px;
+  background:linear-gradient(145deg,#16202a,#10171e);
+  color:#fff;
+  text-align:left;
+}
+.official-source-button>span{
+  width:38px;
+  height:38px;
+  display:grid;
+  place-items:center;
+  border-radius:11px;
+  color:#77e19b;
+  background:rgba(56,199,106,.09);
+  font-size:17px;
+}
+.official-source-button strong{
+  display:block;
+  font-size:12px;
+}
+.official-source-button small{
+  display:block;
+  margin-top:2px;
+  color:#8e9aa5;
+  font-size:10px;
+}
+.official-source-button>b{
+  color:#aeb9c2;
+  font-size:23px;
+}
+.verification-note{
+  margin-bottom:12px;
+  padding:10px 11px;
+  border:1px solid #453728;
+  border-radius:10px;
+  background:rgba(255,106,24,.06);
+  color:#d6b49d;
+  font-size:10px;
+  line-height:1.45;
+}
