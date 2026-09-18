@@ -15,7 +15,7 @@ export function vehicleFolderName(vehicle) {
 }
 
 export function vehicleLabel(vehicle) {
-  return [vehicle.brand, vehicle.model].filter(Boolean).join(' ').trim();
+  return [vehicle.brand, vehicle.model, vehicle.year ? `(${vehicle.year})` : ''].filter(Boolean).join(' ').trim();
 }
 
 function humanVehicle(vehicle) {
@@ -27,13 +27,8 @@ function humanVehicle(vehicle) {
     `Telefono: ${vehicle.phone || ''}`,
     `Marca: ${vehicle.brand || ''}`,
     `Modello: ${vehicle.model || ''}`,
+    `Anno: ${vehicle.year || ''}`,
     `Km attuali: ${vehicle.mileageKm || ''}`,
-    `Km verificati ultima revisione: ${vehicle.verifiedMileageKm || ''}`,
-    `Data ultima revisione verificata: ${vehicle.verifiedRevisionDate || ''}`,
-    `Fonte verifica: ${vehicle.verificationSource || ''}`,
-    `Marca verificata: ${vehicle.verifiedBrand || ''}`,
-    `Modello verificato: ${vehicle.verifiedModel || ''}`,
-    `Verificato il: ${vehicle.verifiedAt || ''}`,
     `Stato: ${vehicle.status || ''}`,
     '',
     'PROBLEMI DICHIARATI DAL CLIENTE',
