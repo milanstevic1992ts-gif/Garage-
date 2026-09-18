@@ -27,7 +27,7 @@ export function isListening() {
   return active;
 }
 
-export async function startDictation({ onPartial, onState, onLevel, onError } = {}) {
+export async function startDictation({ onPartial, onState, onError } = {}) {
   const p = plugin();
   if (!p) throw new Error('Dettatura disponibile nell’APK Android.');
 
@@ -46,7 +46,7 @@ export async function startDictation({ onPartial, onState, onLevel, onError } = 
 
   let useOnDeviceRecognition = false;
   try {
-    const local = await p.isOnDeviceRecognitionAvailable({ language: 'it-IT' });
+    const local = await p.isOnDeviceRecognitionAvailable();
     useOnDeviceRecognition = !!local?.available;
   } catch (_) {}
 
@@ -69,12 +69,6 @@ export async function startDictation({ onPartial, onState, onLevel, onError } = 
     active = false;
     onError?.(event?.message || event?.code || 'Errore riconoscimento vocale');
   }));
-
-  try {
-    handles.push(await p.addListener('audioLevel', event => {
-      onLevel?.(Number(event?.level || 0));
-    }));
-  } catch (_) {}
 
   active = true;
   onState?.('startingListening');
