@@ -31,6 +31,8 @@ const state = {
   activeVoicePanel: null,
   pendingInventoryPhoto: null,
   pendingInventoryPhotoUrl: '',
+  pendingJobPhotos: [],
+  pendingJobPhotoUrls: [],
 };
 
 const STATUS = {
@@ -202,6 +204,13 @@ async function renderVehicleDetail() {
           </div>
           <p style="margin:9px 0 0">${esc(job.workDone)}</p>
           ${job.customerNotes ? `<p class="muted">${esc(job.customerNotes)}</p>` : ''}
+          ${job.photoBlobs?.length ? `
+            <div class="job-photo-strip">
+              ${job.photoBlobs.map((blob,index) => `
+                <img class="job-photo-thumb" data-job-photo="1" alt="Foto intervento ${index + 1}" src="${URL.createObjectURL(blob)}">
+              `).join('')}
+            </div>
+          ` : ''}
         </article>
       `).join('') : '<div class="info-card"><p>Nessun intervento registrato.</p></div>'}
     </div>
@@ -215,12 +224,12 @@ async function renderVehicleDetail() {
     $('#photoDialog').showModal();
   };
 
-  $('#vehicleGallery img[data-photo-id]').forEach(img => {
+  $('#vehicleGallery img[data-photo-id], .job-photo-thumb[data-job-photo="1"]').forEach(img => {
     img.onclick = () => {
       const dialog = $('#photoViewerDialog');
       const viewer = $('#photoViewerImage');
       viewer.src = img.src;
-      viewer.alt = img.alt || 'Foto veicolo';
+      viewer.alt = img.alt || 'Foto';
       dialog.showModal();
     };
   });
@@ -311,6 +320,33 @@ async function saveVehicle(event) {
   await openVehicle(record.id);
 }
 
+function renderPendingJobPhotos() {
+  const preview = $('#jobPhotoPreview');
+  if (!preview) return;
+
+  if (!state.pendingJobPhotoUrls.length) {
+    preview.innerHTML = '<span class="job-photo-empty">Nessuna foto aggiunta</span>';
+    return;
+  }
+
+  preview.innerHTML = state.pendingJobPhotoUrls.map((url,index) =>
+    `<button type="button" class="job-photo-draft" data-remove-job-photo="${index}" aria-label="Rimuovi foto ${index + 1}">
+       <img src="${url}" alt="Anteprima intervento ${index + 1}">
+       <span>×</span>
+     </button>`
+  ).join('');
+
+  preview.querySelectorAll('[data-remove-job-photo]').forEach(button => {
+    button.onclick = () => {
+      const index = Number(button.dataset.removeJobPhoto);
+      const [url] = state.pendingJobPhotoUrls.splice(index, 1);
+      if (url) URL.revokeObjectURL(url);
+      state.pendingJobPhotos.splice(index, 1);
+      renderPendingJobPhotos();
+    };
+  });
+}
+
 function openJobForm(vehicle) {
   const form = $('#jobForm');
   form.reset();
@@ -318,6 +354,11 @@ function openJobForm(vehicle) {
   form.elements.date.value = new Date().toISOString().slice(0,10);
   form.elements.mileageKm.value = vehicle.mileageKm || '';
   $('#jobFormError').textContent = '';
+  state.pendingJobPhotos = [];
+  state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
+  state.pendingJobPhotoUrls = [];
+  $('#jobPhotoInput').value = '';
+  renderPendingJobPhotos();
   $('#jobDialog').showModal();
 }
 
@@ -340,11 +381,15 @@ async function saveJob(event) {
     workDone: data.workDone.trim(),
     customerNotes: data.customerNotes.trim(),
     internalNotes: data.internalNotes.trim(),
+    photoBlobs: [...state.pendingJobPhotos],
     createdAt: nowIso(),
     updatedAt: nowIso(),
   };
 
   await jobs.save(record);
+  state.pendingJobPhotos = [];
+  state.pendingJobPhotoUrls.forEach(url => URL.revokeObjectURL(url));
+  state.pendingJobPhotoUrls = [];
   if (record.mileageKm) {
     vehicle.mileageKm = record.mileageKm;
     vehicle.updatedAt = nowIso();
@@ -810,6 +855,11 @@ async function startVoicePanel(panel) {
         if (preview && text) preview.textContent = text;
       },
       onState: speechState => {
+        if (speechState === 'restarting' && status) {
+          status.textContent = 'Pausa rilevata… continuo ad ascoltare';
+        } else if (speechState === 'started' && status) {
+          status.textContent = 'In ascolto… premi stop quando hai finito';
+        }
         if (
           speechState === 'stopped' &&
           panel.dataset.listening === '1' &&
@@ -968,6 +1018,19 @@ function wireUi() {
 
   $('#choosePhotosButton').onclick = () => $('#photoInput').click();
   $('#photoInput').addEventListener('change', e => saveSelectedPhotos([...e.target.files]));
+
+  $('#jobPhotoButton').onclick = () => $('#jobPhotoInput').click();
+  $('#jobPhotoInput').addEventListener('change', async event => {
+    const files = [...(event.target.files || [])].filter(file => file.type.startsWith('image/'));
+    for (const file of files) {
+      const blob = await compressImage(file);
+      if (!blob) continue;
+      state.pendingJobPhotos.push(blob);
+      state.pendingJobPhotoUrls.push(URL.createObjectURL(blob));
+    }
+    $('#jobPhotoInput').value = '';
+    renderPendingJobPhotos();
+  });
 
   $('#chooseLocalButton').onclick = () => chooseBackup('local');
   $('#chooseDriveButton').onclick = () => chooseBackup('drive');
