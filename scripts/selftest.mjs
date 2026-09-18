@@ -62,7 +62,7 @@ const suggestions = suggestInventoryLocations(items, {
 assert(suggestions[0]?.shelf === 'C', 'Suggerimento scaffale fallito');
 
 const ordered = orderRoughNotes('non parte a freddo; scintilla debole controllare bobina');
-assert(ordered.includes('Non parte a freddo.'), 'Riordino appunti fallito');
+assert(ordered.includes('Non si avvia a freddo.'), 'Riordino appunti fallito');
 
 const rewritten = rewriteWorkshopNotes('cliente dice che non parte bene, fa rumore, perde olio', 'declaredProblems');
 assert(
