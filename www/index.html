@@ -3,38 +3,26 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#0a0d12">
+  <meta name="theme-color" content="#0a0e12">
   <title>Garage</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
   <div class="app-shell">
-    <header class="topbar">
-      <button class="icon-btn top-backup" id="backupShortcut" aria-label="Backup">
-  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg>
-</button>
-    </header>
 
     <main id="main">
       <section id="homeView" class="view home-view">
         <div class="garage-hero">
-          <div class="garage-hero-shade"></div>
+          <div id="garageHeroArt" class="garage-hero-art"></div>
           <div class="garage-brand">
-            <div class="eyebrow">OFFICINA · SCOOTER · MOTO</div>
             <h1>Garage</h1>
-            <p>Passione in movimento.</p>
+            <p>Officina scooter, moto e auto</p>
           </div>
         </div>
 
         <div class="home-search-card">
-          <div class="home-search-title">
-            <div class="big-search-icon">⌕</div>
-            <div>
-              <h2>Chi stai cercando?</h2>
-              <p>Targa, nome cliente o telefono.</p>
-            </div>
-          </div>
+          <h2 class="home-search-heading">Chi stai cercando?</h2>
           <div class="search-box home-search-box">
             <span>⌕</span>
             <input id="vehicleSearch" type="search" autocomplete="off"
@@ -56,9 +44,9 @@
       <section id="inventoryView" class="view hidden inventory-view">
         <div class="inventory-hero-head">
           <div>
-            <div class="eyebrow">MAGAZZINO RICAMBI</div>
+            <div class="eyebrow">Magazzino ricambi</div>
             <h2>Dove si trova?</h2>
-            <p>Trova subito il ricambio giusto.</p>
+            <p>Cerca per nome, mezzo compatibile o scaffale.</p>
           </div>
         </div>
         <div class="search-box">
@@ -67,7 +55,7 @@
                  placeholder="Cerca ricambio...">
           <button id="clearInventorySearch" aria-label="Cancella">×</button>
         </div>
-        <div id="inventoryAiHint" class="ai-hint">Mini AI · prova “carb Betwin verde scaffale C ripiano 2”</div>
+        <div id="inventoryAiHint" class="ai-hint">Prova “carb Betwin verde scaffale C ripiano 2”</div>
         <div class="inventory-meta-row">
           <span id="inventoryResultMeta">0 risultati</span>
           <label class="show-withdrawn"><input type="checkbox" id="showWithdrawn"> Mostra prelevati</label>
@@ -83,7 +71,7 @@
       <section id="backupView" class="view hidden">
         <div class="section-head">
           <div>
-            <div class="eyebrow">COPIE AUTOMATICHE</div>
+            <div class="eyebrow">Copie automatiche</div>
             <h2>Backup</h2>
             <p>Il telefono resta la fonte primaria.</p>
           </div>
@@ -92,14 +80,14 @@
         <div class="backup-card">
           <div class="backup-row">
             <div>
-              <small>CARTELLA TELEFONO</small>
+              <small>Cartella sul telefono</small>
               <strong id="localBackupStatus">Da configurare</strong>
             </div>
             <button class="secondary" id="chooseLocalButton">Scegli</button>
           </div>
           <div class="backup-row">
             <div>
-              <small>GOOGLE DRIVE</small>
+              <small>Google Drive</small>
               <strong id="driveBackupStatus">Da configurare</strong>
             </div>
             <button class="secondary" id="chooseDriveButton">Scegli</button>
@@ -116,20 +104,31 @@
     </main>
 
     <nav class="bottom-nav">
-      <button data-view="home" class="active"><span>⌂</span>Garage</button>
-      <button data-view="inventory"><span>▦</span>Magazzino</button>
-      <button data-view="backup"><span>☁</span>Backup</button>
+      <button data-view="home" class="active">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 4l9 6.5V20H3z"/><path d="M7 20v-6h10v6M7 17h10"/></svg>Garage
+      </button>
+      <button data-view="inventory">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16M20 4v16M4 9h16M4 15h16"/><rect x="7" y="11" width="4" height="4" rx=".5"/><rect x="13" y="5" width="4" height="4" rx=".5"/></svg>Magazzino
+      </button>
+      <button data-view="backup">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18h10a4 4 0 0 0 .6-7.96A6 6 0 0 0 6.1 9.2 4.5 4.5 0 0 0 7 18z"/><path d="M12 11v5m-2.5-2.5L12 11l2.5 2.5"/></svg>Backup
+      </button>
     </nav>
   </div>
 
   <dialog id="vehicleDialog" class="sheet">
     <form id="vehicleForm" method="dialog">
       <div class="sheet-head">
-        <div><div class="eyebrow">SCHEDA VEICOLO</div><h3 id="vehicleFormTitle">Nuovo ingresso</h3></div>
+        <div><h3 id="vehicleFormTitle">Nuovo ingresso</h3></div>
         <button type="button" class="icon-btn" data-close="vehicleDialog">×</button>
       </div>
 
       <input type="hidden" name="id">
+      <input type="hidden" name="vehicleType">
+      <input type="hidden" name="color">
+      <div class="form-stage" id="vehicleFormPreview"></div>
+      <div class="type-picker" id="vehicleTypePicker" role="radiogroup" aria-label="Tipo di veicolo"></div>
+      <div class="color-picker" id="vehicleColorPicker" role="radiogroup" aria-label="Colore"></div>
       <label>Targa <small class="field-optional">facoltativa</small><input name="plate" placeholder="AB123CD" autocapitalize="characters"></label>
       <div class="grid2">
         <label>Nome<input name="firstName" required placeholder="Mario"></label>
@@ -184,7 +183,7 @@
   <dialog id="jobDialog" class="sheet">
     <form id="jobForm" method="dialog">
       <div class="sheet-head">
-        <div><div class="eyebrow">INTERVENTO</div><h3 id="jobFormTitle">Nuovo intervento</h3></div>
+        <div><h3 id="jobFormTitle">Nuovo intervento</h3></div>
         <button type="button" class="icon-btn" data-close="jobDialog">×</button>
       </div>
       <input type="hidden" name="id">
@@ -241,7 +240,7 @@
   <dialog id="photoDialog" class="sheet compact">
     <form method="dialog">
       <div class="sheet-head">
-        <div><div class="eyebrow">FOTOGRAFIE</div><h3>Aggiungi foto</h3></div>
+        <div><h3>Aggiungi foto</h3></div>
         <button type="button" class="icon-btn" data-close="photoDialog">×</button>
       </div>
       <label>Fase
@@ -260,7 +259,7 @@
   <dialog id="inventoryDialog" class="sheet">
     <form id="inventoryForm" method="dialog">
       <div class="sheet-head">
-        <div><div class="eyebrow">MAGAZZINO</div><h3>Nuovo ricambio</h3></div>
+        <div><h3>Nuovo ricambio</h3></div>
         <button type="button" class="icon-btn" data-close="inventoryDialog">×</button>
       </div>
       <div class="inventory-photo-editor">
@@ -328,7 +327,7 @@
   <dialog id="placementDialog" class="sheet compact">
     <form id="placementForm" method="dialog">
       <div class="sheet-head">
-        <div><div class="eyebrow">MAGAZZINO</div><h3>Riponi sullo scaffale</h3></div>
+        <div><h3>Riponi sullo scaffale</h3></div>
         <button type="button" class="icon-btn" data-close="placementDialog">×</button>
       </div>
       <input type="hidden" name="itemId">
