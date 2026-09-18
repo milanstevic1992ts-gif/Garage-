@@ -387,10 +387,10 @@ function renderInventory() {
       </article>`;
     }).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
 
-    $('[data-withdraw-id]').forEach(button => {
+    $$('[data-withdraw-id]').forEach(button => {
       button.onclick = () => withdrawInventoryItem(button.dataset.withdrawId);
     });
-    $('[data-putaway-id]').forEach(button => {
+    $$('[data-putaway-id]').forEach(button => {
       button.onclick = async () => {
         const item = await inventory.get(button.dataset.putawayId);
         openPlacement(item, Number(item.quantity || 0) <= 0 ? 'restock' : 'relocate');
@@ -679,11 +679,11 @@ function wireUi() {
     button.onclick = () => showView(button.dataset.view);
   });
 
-  $('[data-close]').forEach(button => {
+  $$('[data-close]').forEach(button => {
     button.onclick = () => $('#' + button.dataset.close).close();
   });
 
-  $('[data-order-target]').forEach(button => {
+  $$('[data-order-target]').forEach(button => {
     button.onclick = () => {
       const form = button.closest('form');
       const field = form?.elements?.[button.dataset.orderTarget];
