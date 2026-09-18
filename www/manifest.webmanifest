@@ -1,0 +1,11 @@
+{
+  "name":"Garage",
+  "short_name":"Garage",
+  "description":"Frontend offline per officina",
+  "start_url":"index.html",
+  "display":"standalone",
+  "orientation":"portrait",
+  "background_color":"#0a0d12",
+  "theme_color":"#0a0d12",
+  "lang":"it"
+}
