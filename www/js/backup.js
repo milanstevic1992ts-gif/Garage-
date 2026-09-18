@@ -100,14 +100,19 @@ export async function retryPendingPhotos() {
   return wrote;
 }
 
-export async function syncAll() {
+export async function syncMetadata() {
   let wrote = false;
   for (const vehicle of await vehicles.all()) {
     try { wrote = (await syncVehicle(vehicle.id)) || wrote; } catch (_) {}
   }
+  try { wrote = (await syncInventory()) || wrote; } catch (_) {}
+  return wrote;
+}
+
+export async function syncAll() {
+  let wrote = await syncMetadata();
   for (const photo of await photos.all()) {
     try { wrote = (await syncPhoto(photo)) || wrote; } catch (_) {}
   }
-  try { wrote = (await syncInventory()) || wrote; } catch (_) {}
   return wrote;
 }
