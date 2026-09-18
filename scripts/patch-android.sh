@@ -13,6 +13,11 @@ mkdir -p "$PKG_DIR"
 cp scripts/android/GarageStoragePlugin.java "$PKG_DIR/GarageStoragePlugin.java"
 cp scripts/android/MainActivity.java "$PKG_DIR/MainActivity.java"
 
+VARS="android/variables.gradle"
+if [ -f "$VARS" ]; then
+  sed -i -E 's/minSdkVersion = [0-9]+/minSdkVersion = 26/' "$VARS"
+fi
+
 if ! grep -q "androidx.documentfile:documentfile" "$APP_GRADLE"; then
   cat >> "$APP_GRADLE" <<'EOF'
 
