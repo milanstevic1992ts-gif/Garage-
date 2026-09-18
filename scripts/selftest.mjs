@@ -5,6 +5,7 @@ import {
 } from '../www/js/search-ai.js';
 import {
   orderRoughNotes,
+  rewriteWorkshopNotes,
   suggestInventoryTerms,
   normalizeWorkshopDictation,
 } from '../www/js/notes-ai.js';
@@ -62,6 +63,14 @@ assert(suggestions[0]?.shelf === 'C', 'Suggerimento scaffale fallito');
 
 const ordered = orderRoughNotes('non parte a freddo; scintilla debole controllare bobina');
 assert(ordered.includes('Non parte a freddo.'), 'Riordino appunti fallito');
+
+const rewritten = rewriteWorkshopNotes('cliente dice che non parte bene, fa rumore, perde olio', 'declaredProblems');
+assert(
+  rewritten.includes('difficoltà di avviamento') &&
+  rewritten.includes('rumore anomalo') &&
+  rewritten.includes("perdita d'olio"),
+  'Riscrittura professionale appunti fallita',
+);
 
 const terms = suggestInventoryTerms('non parte a freddo e scintilla debole');
 assert(terms.includes('bobina') && terms.includes('candela'), 'Suggerimenti ricambi falliti');
