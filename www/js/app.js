@@ -67,6 +67,24 @@ async function refreshVehicles() {
   state.vehicles.sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
 }
 
+function directVoicePanelMarkup(entity, entityId, title, targets, compact = false) {
+  return `
+    <div class="voice-panel ${compact ? 'compact-voice' : ''}" data-voice-panel data-voice-entity="${entity}" data-entity-id="${entityId}">
+      <div class="voice-main">
+        <button type="button" class="voice-mic" data-voice-toggle aria-label="${esc(title)}">🎙</button>
+        <div class="voice-copy">
+          <strong>${esc(title)}</strong>
+          <span data-voice-status>Tocca il microfono e parla</span>
+        </div>
+      </div>
+      <div class="voice-targets ${targets.length === 1 ? 'hidden' : ''}">
+        ${targets.map((target,index)=>`<button type="button" class="${index===0?'active':''}" data-voice-target="${target.field}">${esc(target.label)}</button>`).join('')}
+      </div>
+      <div class="voice-preview" data-voice-preview>Il testo dettato apparirà qui.</div>
+    </div>
+  `;
+}
+
 function vehicleCard(vehicle) {
   const bikeAsset = /ducati|monster|moto/i.test([vehicle.brand, vehicle.model].filter(Boolean).join(' '))
     ? 'assets/vehicle-bike.svg'
@@ -158,6 +176,11 @@ async function renderVehicleDetail() {
       </div>
     </div>
 
+    ${directVoicePanelMarkup('vehicle', vehicle.id, 'Detta appunti', [
+      { field:'declaredProblems', label:'Dichiarati' },
+      { field:'foundProblems', label:'Riscontrati' },
+    ])}
+
     <div class="section-title"><strong>Fotografie</strong><span>${vehiclePhotos.length}</span></div>
     <div class="gallery" id="vehicleGallery">
       ${vehiclePhotos.length ? vehiclePhotos.map(photo => `
@@ -201,6 +224,7 @@ async function renderVehicleDetail() {
       showView('inventory');
     };
   });
+  wireVoicePanels($('#vehicleView'));
 }
 
 function openVehicleForm(vehicle = null) {
@@ -407,18 +431,22 @@ function renderInventory() {
           ${withdrawn ? '' : `<button class="withdraw-btn" data-withdraw-id="${item.id}">▣ &nbsp; PRELEVA 1</button>`}
           <button class="putaway-btn" data-putaway-id="${item.id}">⇄ &nbsp; ${withdrawn ? 'RIPONI' : (item.shelf ? 'SPOSTA' : 'METTI SU SCAFFALE')}</button>
         </div>
+        ${directVoicePanelMarkup('inventory', item.id, 'Detta note ricambio', [
+          { field:'notes', label:'Note' },
+        ], true)}
       </article>`;
     }).join('') : '<div class="info-card"><p>Nessun ricambio trovato.</p></div>';
 
     $$('[data-withdraw-id]').forEach(button => {
       button.onclick = () => withdrawInventoryItem(button.dataset.withdrawId);
     });
-    $$('[data-putaway-id]').forEach(button => {
+    $('[data-putaway-id]').forEach(button => {
       button.onclick = async () => {
         const item = await inventory.get(button.dataset.putawayId);
         openPlacement(item, Number(item.quantity || 0) <= 0 ? 'restock' : 'relocate');
       };
     });
+    wireVoicePanels($('#inventoryResults'));
   });
 }
 
@@ -629,6 +657,41 @@ async function syncAll() {
 }
 
 
+async function saveDirectDictation(panel, target, text) {
+  const clean = normalizeWorkshopDictation(text);
+  if (!clean) return false;
+
+  const entity = panel.dataset.voiceEntity;
+  const entityId = panel.dataset.entityId;
+
+  if (entity === 'vehicle') {
+    const vehicle = await vehicles.get(entityId);
+    if (!vehicle || !['declaredProblems','foundProblems'].includes(target)) return false;
+    const current = String(vehicle[target] || '').trim();
+    vehicle[target] = current ? `${current}\n${clean}` : clean;
+    vehicle.updatedAt = nowIso();
+    await vehicles.save(vehicle);
+    backup.scheduleVehicle(vehicle.id, 150);
+    await refreshVehicles();
+    await renderVehicleDetail();
+    return true;
+  }
+
+  if (entity === 'inventory') {
+    const item = await inventory.get(entityId);
+    if (!item || target !== 'notes') return false;
+    const current = String(item.notes || '').trim();
+    item.notes = current ? `${current}\n${clean}` : clean;
+    item.updatedAt = nowIso();
+    await inventory.save(item);
+    backup.syncInventory().catch(() => {});
+    renderInventory();
+    return true;
+  }
+
+  return false;
+}
+
 function appendDictation(field, text) {
   const clean = normalizeWorkshopDictation(text);
   if (!field || !clean) return;
@@ -668,14 +731,18 @@ async function finishVoicePanel(panel, automatic = false) {
   } catch (_) {}
 
   const targetButton = selectedVoiceTarget(panel);
+  const target = targetButton?.dataset?.voiceTarget;
   const form = panel.closest('form');
-  const field = form?.elements?.[targetButton?.dataset?.voiceTarget];
+  const field = form?.elements?.[target];
 
   if (text && field) {
     appendDictation(field, text);
     const preview = panel.querySelector('[data-voice-preview]');
     if (preview) preview.textContent = text;
     resetVoicePanel(panel, automatic ? 'Dettatura inserita automaticamente' : 'Dettatura inserita');
+  } else if (text && panel.dataset.voiceEntity && target) {
+    const saved = await saveDirectDictation(panel, target, text);
+    if (!saved) resetVoicePanel(panel, 'Nessun testo riconosciuto');
   } else {
     resetVoicePanel(panel, 'Nessun testo riconosciuto');
   }
@@ -732,8 +799,10 @@ async function startVoicePanel(panel) {
   }
 }
 
-function wireVoicePanels() {
-  $$('[data-voice-panel]').forEach(panel => {
+function wireVoicePanels(root = document) {
+  root.querySelectorAll('[data-voice-panel]').forEach(panel => {
+    if (panel.dataset.voiceWired === '1') return;
+    panel.dataset.voiceWired = '1';
     panel.dataset.listening = '0';
     panel.dataset.finishing = '0';
 
