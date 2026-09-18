@@ -507,11 +507,17 @@ async function start() {
   await refreshVehicles();
   renderVehicleList();
   await refreshInventory();
+  backup.syncMetadata().catch(() => {});
   backup.retryPendingPhotos().catch(() => {});
 
   if (window.Capacitor?.isNativePlatform?.()) {
-    window.Capacitor.Plugins.App?.addListener?.('backButton', () => {
+    const App = window.Capacitor.Plugins.App;
+    App?.addListener?.('backButton', () => {
       if (state.view === 'vehicle') showView('home');
+    });
+    App?.addListener?.('appStateChange', ({ isActive }) => {
+      if (!isActive) backup.syncMetadata().catch(() => {});
+      if (isActive) backup.retryPendingPhotos().catch(() => {});
     });
   }
 }
