@@ -127,7 +127,6 @@
 
       <input type="hidden" name="id">
       <label>Targa<input name="plate" required placeholder="AB123CD" autocapitalize="characters"></label>
-      <button type="button" class="verify-plate-button" id="verifyPlateFromForm">✓ Verifica dati targa</button>
       <div class="grid2">
         <label>Nome<input name="firstName" required placeholder="Mario"></label>
         <label>Cognome<input name="lastName" placeholder="Rossi"></label>
@@ -140,6 +139,7 @@
         <label>Marca<input name="brand" placeholder="Yamaha"></label>
         <label>Modello<input name="model" placeholder="TMAX 530"></label>
       </div>
+      <label>Anno<input name="year" inputmode="numeric" maxlength="4" placeholder="2018"></label>
       <label>Problemi dichiarati dal cliente
         <textarea name="declaredProblems" rows="3" placeholder="Cosa riferisce il cliente?"></textarea>
         <button type="button" class="ai-action" data-order-target="declaredProblems">✦ Riordina appunti</button>
@@ -317,71 +317,6 @@
       <div id="placementSuggestions" class="suggestions"></div>
       <div class="form-error" id="placementFormError"></div>
       <button class="primary full" type="submit">Conferma posizione</button>
-    </form>
-  </dialog>
-
-  <dialog id="verificationDialog" class="sheet">
-    <form id="verificationForm" method="dialog">
-      <div class="sheet-head">
-        <div>
-          <div class="eyebrow">DATI VEICOLO</div>
-          <h3>Verifica targa</h3>
-        </div>
-        <button type="button" class="icon-btn" data-close="verificationDialog">×</button>
-      </div>
-
-      <input type="hidden" name="vehicleId">
-
-      <div class="verification-plate-row">
-        <span>TARGA</span>
-        <strong id="verificationPlate">—</strong>
-      </div>
-
-      <div class="verification-source-actions">
-        <button type="button" class="official-source-button" id="openRevisionPortal">
-          <span>✓</span>
-          <div>
-            <strong>Portale dell'Automobilista</strong>
-            <small>Revisioni e km registrati</small>
-          </div>
-          <b>›</b>
-        </button>
-        <button type="button" class="official-source-button" id="openAciInfo">
-          <span>ⓘ</span>
-          <div>
-            <strong>ACI / Infotarga</strong>
-            <small>Marca, modello e dati tecnici</small>
-          </div>
-          <b>›</b>
-        </button>
-      </div>
-
-      <div class="verification-note">
-        Il Portale dell'Automobilista richiede CAPTCHA. Inserisci qui i dati che hai appena verificato:
-      </div>
-
-      <div class="grid2">
-        <label>Marca verificata<input name="verifiedBrand" placeholder="Yamaha"></label>
-        <label>Modello verificato<input name="verifiedModel" placeholder="TMAX 530"></label>
-      </div>
-
-      <div class="grid2">
-        <label>Km ultima revisione<input name="verifiedMileageKm" inputmode="numeric" placeholder="31246"></label>
-        <label>Data ultima revisione<input name="verifiedRevisionDate" type="date"></label>
-      </div>
-
-      <label>Fonte
-        <select name="verificationSource">
-          <option value="portale">Portale dell'Automobilista</option>
-          <option value="aci">ACI / Infotarga</option>
-          <option value="manuale">Altro documento verificato</option>
-        </select>
-      </label>
-
-      <label>Note verifica<textarea name="verificationNotes" rows="2" placeholder="Eventuali note..."></textarea></label>
-
-      <div class="form-error" id="verificationFormError"></div>
-      <button class="primary full" type="submit">Salva dati verificati</button>
     </form>
   </dialog>
 
