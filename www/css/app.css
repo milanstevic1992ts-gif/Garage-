@@ -475,6 +475,44 @@ h1,h2,h3{letter-spacing:-.03em}
   object-fit:cover;
   border:1px solid var(--line);
   border-radius:11px;
+  cursor:pointer;
+}
+
+.photo-viewer{
+  width:100vw;
+  max-width:none;
+  height:100dvh;
+  max-height:none;
+  margin:0;
+  padding:0;
+  border:0;
+  background:#05080b;
+}
+.photo-viewer::backdrop{background:rgba(0,0,0,.94)}
+.photo-viewer[open]{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.photo-viewer img{
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  padding:52px 10px 18px;
+}
+.photo-viewer-close{
+  position:fixed;
+  z-index:3;
+  top:calc(10px + env(safe-area-inset-top));
+  right:12px;
+  width:42px;
+  height:42px;
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:50%;
+  background:rgba(12,16,21,.82);
+  color:#fff;
+  font-size:28px;
+  line-height:1;
 }
 .job-card{padding:13px}
 .job-card small,.muted{color:var(--muted)}
