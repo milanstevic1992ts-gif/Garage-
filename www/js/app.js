@@ -11,6 +11,7 @@ import {
 } from './search-ai.js';
 import { orderRoughNotes, suggestInventoryTerms } from './notes-ai.js';
 import { scanShelf } from './shelf-scanner.js';
+import { startDictation, stopDictation, cancelDictation, isSpeechAvailable } from './speech.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -25,6 +26,7 @@ const state = {
   activeVehicleId: null,
   photoVehicleId: null,
   placementMode: 'relocate',
+  activeVoicePanel: null,
 };
 
 const STATUS = {
@@ -605,7 +607,140 @@ async function syncAll() {
   }
 }
 
+
+function appendDictation(field, text) {
+  const clean = String(text || '').trim();
+  if (!field || !clean) return;
+  const current = field.value.trim();
+  field.value = current ? `${current}\n${clean}` : clean;
+  field.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function selectedVoiceTarget(panel) {
+  return panel.querySelector('[data-voice-target].active')
+    || panel.querySelector('[data-voice-target]');
+}
+
+function resetVoicePanel(panel, message = 'Tocca il microfono e parla') {
+  panel.classList.remove('listening');
+  panel.dataset.listening = '0';
+  panel.dataset.finishing = '0';
+  panel.style.setProperty('--mic-level', '0');
+  const status = panel.querySelector('[data-voice-status]');
+  const preview = panel.querySelector('[data-voice-preview]');
+  const mic = panel.querySelector('[data-voice-toggle]');
+  if (status) status.textContent = message;
+  if (mic) mic.textContent = '🎙';
+  if (preview && !preview.textContent.trim()) preview.textContent = 'Il testo dettato apparirà qui.';
+}
+
+async function finishVoicePanel(panel, automatic = false) {
+  if (!panel || panel.dataset.finishing === '1') return;
+  panel.dataset.finishing = '1';
+
+  const status = panel.querySelector('[data-voice-status]');
+  if (status) status.textContent = 'Salvataggio dettatura…';
+
+  let text = '';
+  try {
+    text = await stopDictation();
+  } catch (_) {}
+
+  const targetButton = selectedVoiceTarget(panel);
+  const form = panel.closest('form');
+  const field = form?.elements?.[targetButton?.dataset?.voiceTarget];
+
+  if (text && field) {
+    appendDictation(field, text);
+    const preview = panel.querySelector('[data-voice-preview]');
+    if (preview) preview.textContent = text;
+    resetVoicePanel(panel, automatic ? 'Dettatura inserita automaticamente' : 'Dettatura inserita');
+  } else {
+    resetVoicePanel(panel, 'Nessun testo riconosciuto');
+  }
+
+  if (state.activeVoicePanel === panel) state.activeVoicePanel = null;
+}
+
+async function startVoicePanel(panel) {
+  if (!isSpeechAvailable()) {
+    toast('Microfono disponibile nell’APK Android.');
+    return;
+  }
+
+  if (state.activeVoicePanel && state.activeVoicePanel !== panel) {
+    await finishVoicePanel(state.activeVoicePanel);
+  }
+
+  state.activeVoicePanel = panel;
+  panel.dataset.listening = '1';
+  panel.classList.add('listening');
+
+  const status = panel.querySelector('[data-voice-status]');
+  const preview = panel.querySelector('[data-voice-preview]');
+  const mic = panel.querySelector('[data-voice-toggle]');
+
+  if (status) status.textContent = 'In ascolto… parla normalmente';
+  if (preview) preview.textContent = '…';
+  if (mic) mic.textContent = '■';
+
+  try {
+    await startDictation({
+      onPartial: text => {
+        if (preview && text) preview.textContent = text;
+      },
+      onState: speechState => {
+        if (
+          speechState === 'stopped' &&
+          panel.dataset.listening === '1' &&
+          panel.dataset.finishing !== '1'
+        ) {
+          setTimeout(() => finishVoicePanel(panel, true), 0);
+        }
+      },
+      onLevel: level => {
+        const scale = 1 + Math.min(.12, Math.max(0, level) * .12);
+        const button = panel.querySelector('[data-voice-toggle]');
+        button?.style.setProperty('--mic-scale', String(scale));
+      },
+      onError: message => {
+        resetVoicePanel(panel, 'Errore microfono');
+        toast(message);
+      },
+    });
+  } catch (error) {
+    await cancelDictation().catch(() => {});
+    resetVoicePanel(panel, 'Microfono non disponibile');
+    state.activeVoicePanel = null;
+    toast(error.message);
+  }
+}
+
+function wireVoicePanels() {
+  $('[data-voice-panel]').forEach(panel => {
+    panel.dataset.listening = '0';
+    panel.dataset.finishing = '0';
+
+    panel.querySelectorAll('[data-voice-target]').forEach(button => {
+      button.onclick = () => {
+        if (panel.dataset.listening === '1') return;
+        panel.querySelectorAll('[data-voice-target]').forEach(x => x.classList.remove('active'));
+        button.classList.add('active');
+      };
+    });
+
+    const mic = panel.querySelector('[data-voice-toggle]');
+    if (mic) {
+      mic.onclick = async () => {
+        if (panel.dataset.listening === '1') await finishVoicePanel(panel);
+        else await startVoicePanel(panel);
+      };
+    }
+  });
+}
+
 function wireUi() {
+  wireVoicePanels();
   $('#newVehicleButton').onclick = () => openVehicleForm();
   $('#vehicleForm').addEventListener('submit', saveVehicle);
   $('#jobForm').addEventListener('submit', saveJob);
@@ -716,7 +851,10 @@ async function start() {
       if (state.view === 'vehicle') showView('home');
     });
     App?.addListener?.('appStateChange', ({ isActive }) => {
-      if (!isActive) backup.syncMetadata().catch(() => {});
+      if (!isActive) {
+        backup.syncMetadata().catch(() => {});
+        if (state.activeVoicePanel) finishVoicePanel(state.activeVoicePanel).catch(() => {});
+      }
       if (isActive) backup.retryPendingPhotos().catch(() => {});
     });
   }
