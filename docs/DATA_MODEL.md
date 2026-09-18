@@ -100,3 +100,20 @@ Formato QR consigliato:
 `GARAGE:SCAFFALE:B:RIPIANO:2`
 
 Sono accettati anche `SCAFFALE B` e codici scaffale brevi.
+
+
+## Dati verificati veicolo
+
+La scheda veicolo può memorizzare:
+
+- `verifiedMileageKm`: km registrati all'ultima revisione verificata;
+- `verifiedRevisionDate`: data dell'ultima revisione;
+- `verificationSource`: fonte della verifica;
+- `verificationNotes`;
+- `verifiedBrand`;
+- `verifiedModel`;
+- `verifiedAt`: data/ora in cui Garage ha salvato la verifica.
+
+I km verificati non sostituiscono i km attuali: vengono mostrati separatamente
+e Garage segnala se il chilometraggio attuale risulta inferiore a quello
+registrato alla revisione.
