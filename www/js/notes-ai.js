@@ -53,3 +53,26 @@ export function suggestInventoryTerms(problemText = '') {
   }
   return out.slice(0, 8);
 }
+
+
+const DICTATION_NORMALIZATIONS = [
+  [/\bt\s*max\b/gi, 'TMAX'],
+  [/\bcd\s*i\b/gi, 'CDI'],
+  [/\be\s*cu\b/gi, 'ECU'],
+  [/\bdell\s+orto\b/gi, "Dell'Orto"],
+  [/\bbet\s*win\b/gi, 'Betwin'],
+  [/\bliberti\b/gi, 'Liberty'],
+  [/\baerox\b/gi, 'Aerox'],
+  [/\bpiaggio\b/gi, 'Piaggio'],
+  [/\byamaha\b/gi, 'Yamaha'],
+  [/\bpeugeot\b/gi, 'Peugeot'],
+  [/\bkilometri\b/gi, 'km'],
+];
+
+export function normalizeWorkshopDictation(value = '') {
+  let text = String(value || '').trim().replace(/\s+/g, ' ');
+  for (const [pattern, replacement] of DICTATION_NORMALIZATIONS) {
+    text = text.replace(pattern, replacement);
+  }
+  return text;
+}
