@@ -1,5 +1,5 @@
 const DB_NAME = 'garage';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let cached = null;
 
 function openDb() {
@@ -31,6 +31,13 @@ function openDb() {
       if (!db.objectStoreNames.contains('inventory')) {
         const s = db.createObjectStore('inventory', { keyPath: 'id' });
         s.createIndex('updatedAt', 'updatedAt');
+      }
+
+      if (!db.objectStoreNames.contains('stockMovements')) {
+        const s = db.createObjectStore('stockMovements', { keyPath: 'id' });
+        s.createIndex('itemId', 'itemId');
+        s.createIndex('createdAt', 'createdAt');
+        s.createIndex('type', 'type');
       }
 
       if (!db.objectStoreNames.contains('meta')) {
@@ -110,6 +117,12 @@ export const inventory = {
   get: id => run('inventory', 'readonly', s => s.get(id)),
   save: item => run('inventory', 'readwrite', s => s.put(item)),
   remove: id => run('inventory', 'readwrite', s => s.delete(id)),
+};
+
+export const stockMovements = {
+  all: () => run('stockMovements', 'readonly', s => s.getAll()),
+  byItem: itemId => byIndex('stockMovements', 'itemId', itemId),
+  save: item => run('stockMovements', 'readwrite', s => s.put(item)),
 };
 
 export const meta = {
