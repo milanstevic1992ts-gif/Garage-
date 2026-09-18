@@ -399,6 +399,136 @@ function renderInventory() {
   });
 }
 
+async function recordStockMovement(item, type, delta, extra = {}) {
+  await stockMovements.save({
+    id: uuid(),
+    itemId: item.id,
+    itemName: item.name,
+    type,
+    delta,
+    quantityAfter: Number(item.quantity || 0),
+    shelf: item.shelf || '',
+    level: item.level || '',
+    drawer: item.drawer || '',
+    createdAt: nowIso(),
+    ...extra,
+  });
+}
+
+async function withdrawInventoryItem(id) {
+  const item = await inventory.get(id);
+  if (!item || Number(item.quantity || 0) <= 0) return;
+
+  item.quantity = Math.max(0, Number(item.quantity || 0) - 1);
+  item.status = item.quantity === 0 ? 'taken' : 'available';
+  item.takenAt = item.quantity === 0 ? nowIso() : null;
+  item.updatedAt = nowIso();
+  await inventory.save(item);
+  await recordStockMovement(item, 'withdraw', -1);
+
+  backup.syncInventory().catch(() => {});
+  toast(item.quantity === 0 ? 'Pezzo prelevato · non più disponibile' : 'Prelevato 1 pezzo');
+  renderInventory();
+}
+
+function draftFromInventoryForm() {
+  const form = $('#inventoryForm');
+  return {
+    id: '',
+    name: form.elements.name.value.trim(),
+    category: form.elements.category.value.trim(),
+    brand: form.elements.brand.value.trim(),
+    compatibleWith: form.elements.compatibleWith.value.trim(),
+  };
+}
+
+function applyLocation(form, location) {
+  form.elements.shelf.value = location.shelf || '';
+  form.elements.level.value = location.level || '';
+  form.elements.drawer.value = location.drawer || '';
+}
+
+function renderLocationSuggestions(container, draft, apply) {
+  const suggestions = suggestInventoryLocations(state.inventory, draft, 3);
+  container.innerHTML = suggestions.length
+    ? suggestions.map((s, index) => {
+        const label = [
+          `Scaffale ${s.shelf}`,
+          s.level ? `Ripiano ${s.level}` : '',
+          s.drawer ? `Cassetto ${s.drawer}` : '',
+        ].filter(Boolean).join(' · ');
+        return `<button type="button" class="suggestion-chip" data-suggestion="${index}">✦ ${esc(label)}${s.reason ? ` · ${esc(s.reason)}` : ''}</button>`;
+      }).join('')
+    : '<span class="muted" style="font-size:11px">Nessuna posizione simile: scegli tu lo scaffale.</span>';
+
+  container.querySelectorAll('[data-suggestion]').forEach(button => {
+    button.onclick = () => apply(suggestions[Number(button.dataset.suggestion)]);
+  });
+}
+
+async function scanIntoForm(form) {
+  try {
+    const location = await scanShelf();
+    applyLocation(form, location);
+    toast(`Scaffale ${location.shelf} acquisito`);
+  } catch (error) {
+    toast(error.message);
+  }
+}
+
+function openPlacement(item, mode = 'relocate') {
+  state.placementMode = mode;
+  const form = $('#placementForm');
+  form.reset();
+  form.elements.itemId.value = item.id;
+  form.elements.quantity.value = 1;
+  form.elements.quantity.disabled = mode === 'relocate';
+  form.elements.shelf.value = item.shelf || '';
+  form.elements.level.value = item.level || '';
+  form.elements.drawer.value = item.drawer || '';
+  $('#placementFormError').textContent = '';
+  renderLocationSuggestions($('#placementSuggestions'), item, location => applyLocation(form, location));
+  $('#placementDialog').showModal();
+}
+
+async function savePlacement(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const item = await inventory.get(form.elements.itemId.value);
+  if (!item) return;
+
+  const shelf = form.elements.shelf.value.trim().toUpperCase();
+  if (!shelf) {
+    $('#placementFormError').textContent = 'Indica o scansiona lo scaffale.';
+    return;
+  }
+
+  const delta = state.placementMode === 'restock'
+    ? Math.max(1, Number(form.elements.quantity.value || 1))
+    : 0;
+
+  item.shelf = shelf;
+  item.level = form.elements.level.value.trim();
+  item.drawer = form.elements.drawer.value.trim();
+  item.quantity = Number(item.quantity || 0) + delta;
+  item.status = item.quantity > 0 ? 'available' : item.status;
+  item.takenAt = item.quantity > 0 ? null : item.takenAt;
+  item.updatedAt = nowIso();
+
+  await inventory.save(item);
+  await recordStockMovement(
+    item,
+    state.placementMode === 'restock' ? 'putaway' : 'relocate',
+    delta,
+    { source: 'manual_or_scan' },
+  );
+
+  $('#placementDialog').close();
+  backup.syncInventory().catch(() => {});
+  toast(state.placementMode === 'restock' ? 'Pezzo riposto in magazzino' : 'Posizione aggiornata');
+  renderInventory();
+}
+
 async function saveInventory(event) {
   event.preventDefault();
   const data = Object.fromEntries(new FormData(event.currentTarget));
