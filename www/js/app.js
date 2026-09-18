@@ -14,9 +14,6 @@ import {
 } from './notes-ai.js';
 import { scanShelf } from './shelf-scanner.js';
 import { startDictation, stopDictation, cancelDictation, isSpeechAvailable } from './speech.js';
-import {
-  openVerificationSource, sourceLabel, mileageComparison,
-} from './vehicle-verification.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -32,8 +29,6 @@ const state = {
   photoVehicleId: null,
   placementMode: 'relocate',
   activeVoicePanel: null,
-  verificationPlate: '',
-  pendingVerification: null,
 };
 
 const STATUS = {
@@ -72,129 +67,6 @@ async function refreshVehicles() {
   state.vehicles.sort((a,b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
 }
 
-
-function verificationCardMarkup(vehicle) {
-  const verified = Number(vehicle.verifiedMileageKm || 0);
-  const comparison = mileageComparison(vehicle.mileageKm, verified);
-  const hasVerified = verified > 0;
-
-  return `
-    <section class="verified-mileage-card ${hasVerified ? 'verified' : 'empty'}">
-      <div class="verified-mileage-head">
-        <div>
-          <small>✓ &nbsp; CHILOMETRI VERIFICATI</small>
-          <strong>${hasVerified ? verified.toLocaleString('it-IT') + ' km' : 'Da verificare'}</strong>
-        </div>
-        <button type="button" class="verification-action" id="verifyVehicleButton">${hasVerified ? 'Aggiorna' : 'Verifica targa'}</button>
-      </div>
-      ${hasVerified ? `
-        <div class="verification-meta">
-          <span>Ultima revisione</span>
-          <b>${vehicle.verifiedRevisionDate ? new Date(vehicle.verifiedRevisionDate + 'T00:00:00').toLocaleDateString('it-IT') : 'Data non indicata'}</b>
-          <span>Fonte</span>
-          <b>${esc(sourceLabel(vehicle.verificationSource))}</b>
-        </div>
-        <div class="mileage-comparison ${comparison.state}">${esc(comparison.text)}</div>
-      ` : `
-        <p>Nessun chilometraggio ufficiale salvato per questa targa.</p>
-      `}
-    </section>
-  `;
-}
-
-function openVerificationDialog(vehicle = null, plateOverride = '') {
-  const form = $('#verificationForm');
-  form.reset();
-  $('#verificationFormError').textContent = '';
-
-  const plate = normalizePlate(plateOverride || vehicle?.plate || '');
-  state.verificationPlate = plate;
-  $('#verificationPlate').textContent = plate || '—';
-
-  form.elements.vehicleId.value = vehicle?.id || '';
-  const pending = !vehicle && state.pendingVerification?.plate === plate
-    ? state.pendingVerification
-    : null;
-
-  form.elements.verifiedBrand.value = vehicle?.verifiedBrand || pending?.verifiedBrand || vehicle?.brand || '';
-  form.elements.verifiedModel.value = vehicle?.verifiedModel || pending?.verifiedModel || vehicle?.model || '';
-  form.elements.verifiedMileageKm.value = vehicle?.verifiedMileageKm || pending?.verifiedMileageKm || '';
-  form.elements.verifiedRevisionDate.value = vehicle?.verifiedRevisionDate || pending?.verifiedRevisionDate || '';
-  form.elements.verificationSource.value = vehicle?.verificationSource || pending?.verificationSource || 'portale';
-  form.elements.verificationNotes.value = vehicle?.verificationNotes || pending?.verificationNotes || '';
-
-  $('#verificationDialog').showModal();
-}
-
-async function saveVerification(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const data = Object.fromEntries(new FormData(form));
-  const verifiedMileageKm = String(data.verifiedMileageKm || '').replace(/\D/g, '');
-
-  if (!state.verificationPlate) {
-    $('#verificationFormError').textContent = 'Inserisci prima una targa valida.';
-    return;
-  }
-  if (!verifiedMileageKm) {
-    $('#verificationFormError').textContent = 'Inserisci i km dell’ultima revisione.';
-    return;
-  }
-
-  let vehicle = data.vehicleId ? await vehicles.get(data.vehicleId) : null;
-  if (!vehicle) {
-    vehicle = await vehicles.getByPlate(state.verificationPlate);
-  }
-
-  if (!vehicle) {
-    state.pendingVerification = {
-      plate: state.verificationPlate,
-      verifiedMileageKm,
-      verifiedRevisionDate: data.verifiedRevisionDate || '',
-      verificationSource: data.verificationSource || 'portale',
-      verificationNotes: data.verificationNotes.trim(),
-      verifiedBrand: data.verifiedBrand.trim(),
-      verifiedModel: data.verifiedModel.trim(),
-      verifiedAt: nowIso(),
-    };
-
-    const vehicleForm = $('#vehicleForm');
-    if (vehicleForm?.open !== false) {
-      if (state.pendingVerification.verifiedBrand) {
-        vehicleForm.elements.brand.value = state.pendingVerification.verifiedBrand;
-      }
-      if (state.pendingVerification.verifiedModel) {
-        vehicleForm.elements.model.value = state.pendingVerification.verifiedModel;
-      }
-    }
-
-    $('#verificationDialog').close();
-    toast('Dati verificati pronti per il nuovo ingresso');
-    return;
-  }
-
-  vehicle.verifiedMileageKm = verifiedMileageKm;
-  vehicle.verifiedRevisionDate = data.verifiedRevisionDate || '';
-  vehicle.verificationSource = data.verificationSource || 'portale';
-  vehicle.verificationNotes = data.verificationNotes.trim();
-  vehicle.verifiedBrand = data.verifiedBrand.trim();
-  vehicle.verifiedModel = data.verifiedModel.trim();
-  vehicle.verifiedAt = nowIso();
-
-  if (vehicle.verifiedBrand) vehicle.brand = vehicle.verifiedBrand;
-  if (vehicle.verifiedModel) vehicle.model = vehicle.verifiedModel;
-  vehicle.updatedAt = nowIso();
-
-  await vehicles.save(vehicle);
-  backup.scheduleVehicle(vehicle.id, 100);
-  await refreshVehicles();
-
-  $('#verificationDialog').close();
-  toast('Dati verificati salvati');
-
-  if (state.activeVehicleId === vehicle.id) await renderVehicleDetail();
-  else renderVehicleList();
-}
 
 function directVoicePanelMarkup(entity, entityId, title, targets, compact = false) {
   return `
@@ -294,8 +166,6 @@ async function renderVehicleDetail() {
       <button id="addPhotoButton">▣ <span>Foto</span></button>
     </div>
 
-    ${verificationCardMarkup(vehicle)}
-
     <div class="problem-stack">
       <div class="problem-card premium-problem-card">
         <div class="problem-title-row"><small>▤ &nbsp; PROBLEMI DICHIARATI</small><span>Modifica</span></div>
@@ -337,7 +207,6 @@ async function renderVehicleDetail() {
 
   $('#backHome').onclick = () => showView('home');
   $('#editVehicleButton').onclick = () => openVehicleForm(vehicle);
-  $('#verifyVehicleButton').onclick = () => openVerificationDialog(vehicle);
   $('#addJobButton').onclick = () => openJobForm(vehicle);
   $('#addPhotoButton').onclick = () => {
     state.photoVehicleId = vehicle.id;
@@ -374,6 +243,7 @@ function openVehicleForm(vehicle = null) {
   form.elements.mileageKm.value = vehicle?.mileageKm || '';
   form.elements.brand.value = vehicle?.brand || '';
   form.elements.model.value = vehicle?.model || '';
+  form.elements.year.value = vehicle?.year || '';
   form.elements.declaredProblems.value = vehicle?.declaredProblems || '';
   form.elements.foundProblems.value = vehicle?.foundProblems || '';
   form.elements.status.value = vehicle?.status || 'da_controllare';
@@ -410,53 +280,16 @@ async function saveVehicle(event) {
     phone: data.phone.trim(),
     brand: data.brand.trim(),
     model: data.model.trim(),
+    year: String(data.year || '').replace(/\D/g,'').slice(0,4),
     mileageKm: String(data.mileageKm || '').replace(/\D/g,''),
     declaredProblems: data.declaredProblems.trim(),
     foundProblems: data.foundProblems.trim(),
     status: data.status,
-    verifiedMileageKm: previous?.verifiedMileageKm || (
-      state.pendingVerification?.plate === normalizedPlate
-        ? state.pendingVerification.verifiedMileageKm
-        : ''
-    ),
-    verifiedRevisionDate: previous?.verifiedRevisionDate || (
-      state.pendingVerification?.plate === normalizedPlate
-        ? state.pendingVerification.verifiedRevisionDate
-        : ''
-    ),
-    verificationSource: previous?.verificationSource || (
-      state.pendingVerification?.plate === normalizedPlate
-        ? state.pendingVerification.verificationSource
-        : ''
-    ),
-    verificationNotes: previous?.verificationNotes || (
-      state.pendingVerification?.plate === normalizedPlate
-        ? state.pendingVerification.verificationNotes
-        : ''
-    ),
-    verifiedBrand: previous?.verifiedBrand || (
-      state.pendingVerification?.plate === normalizedPlate
-        ? state.pendingVerification.verifiedBrand
-        : ''
-    ),
-    verifiedModel: previous?.verifiedModel || (
-      state.pendingVerification?.plate === normalizedPlate
-        ? state.pendingVerification.verifiedModel
-        : ''
-    ),
-    verifiedAt: previous?.verifiedAt || (
-      state.pendingVerification?.plate === normalizedPlate
-        ? state.pendingVerification.verifiedAt
-        : ''
-    ),
     createdAt: previous?.createdAt || nowIso(),
     updatedAt: nowIso(),
   };
 
   await vehicles.save(record);
-  if (state.pendingVerification?.plate === normalizedPlate) {
-    state.pendingVerification = null;
-  }
   await refreshVehicles();
   renderVehicleList();
   backup.scheduleVehicle(record.id);
@@ -1005,7 +838,6 @@ function wireUi() {
     renderVehicleList();
   };
   $('#vehicleForm').addEventListener('submit', saveVehicle);
-  $('#verificationForm').addEventListener('submit', saveVerification);
   $('#jobForm').addEventListener('submit', saveJob);
   $('#inventoryForm').addEventListener('submit', saveInventory);
   $('#placementForm').addEventListener('submit', savePlacement);
@@ -1098,21 +930,6 @@ function wireUi() {
   $('#vehicleForm').elements.plate.addEventListener('input', e => {
     e.target.value = e.target.value.toUpperCase();
   });
-
-  $('#verifyPlateFromForm').onclick = async () => {
-    const plate = normalizePlate($('#vehicleForm').elements.plate.value);
-    if (!plate) {
-      toast('Inserisci prima la targa.');
-      return;
-    }
-    const existing = await vehicles.getByPlate(plate);
-    openVerificationDialog(existing, plate);
-  };
-
-  $('#openRevisionPortal').onclick = () =>
-    openVerificationSource('portale').catch(error => toast(error.message));
-  $('#openAciInfo').onclick = () =>
-    openVerificationSource('aci').catch(error => toast(error.message));
 }
 
 async function start() {
