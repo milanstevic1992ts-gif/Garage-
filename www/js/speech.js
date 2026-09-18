@@ -61,8 +61,10 @@ export async function startDictation({ onPartial, onState, onError } = {}) {
   }));
 
   handles.push(await p.addListener('listeningState', event => {
-    active = event?.state === 'started' || event?.state === 'startingListening';
-    onState?.(event?.state || (active ? 'started' : 'stopped'));
+    // v7 usa "status"; le versioni più recenti espongono anche "state".
+    const speechState = event?.status || event?.state || '';
+    active = speechState === 'started' || speechState === 'startingListening';
+    onState?.(speechState || (active ? 'started' : 'stopped'));
   }));
 
   handles.push(await p.addListener('error', event => {
@@ -78,6 +80,8 @@ export async function startDictation({ onPartial, onState, onError } = {}) {
     maxResults: 1,
     popup: false,
     partialResults: true,
+    // Su Android evita che una breve pausa chiuda subito la dettatura.
+    allowForSilence: 4500,
     addPunctuation: true,
     contextualStrings: CONTEXT,
     useOnDeviceRecognition,
