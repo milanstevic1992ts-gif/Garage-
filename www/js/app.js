@@ -483,6 +483,7 @@ function openPlacement(item, mode = 'relocate') {
   form.elements.itemId.value = item.id;
   form.elements.quantity.value = 1;
   form.elements.quantity.disabled = mode === 'relocate';
+  $('#placementQuantityLabel').classList.toggle('hidden', mode === 'relocate');
   form.elements.shelf.value = item.shelf || '';
   form.elements.level.value = item.level || '';
   form.elements.drawer.value = item.drawer || '';
